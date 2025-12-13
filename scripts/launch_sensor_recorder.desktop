@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Launch Sensor Recorder
+Exec=gnome-terminal -- /home/nvidia/Desktop/handheld_sensor_record.sh
+Terminal=true
+Icon=utilities-terminal
+Categories=Utility;
