@@ -9,6 +9,9 @@ Custom Rig for https://github.com/hku-mars/LIV_handhold_2
 - ZED SDK 4.2.5
 - MVS 3.0.1 build20240420 [ARM]
 
+![front](./media/front.jpeg)
+![back](./media/back.jpeg)
+
 ## Build 
 
 ### For SL zed
