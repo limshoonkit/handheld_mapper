@@ -257,7 +257,7 @@ static void *WorkThread(void *pUser) {
       
       std_msgs::msg::Header header;
       header.stamp = rcv_time;
-      header.frame_id = "camera";
+      // header.frame_id = "camera";
       
       sensor_msgs::msg::Image::SharedPtr msg = cv_bridge::CvImage(header, "rgb8", srcImage).toImageMsg();
       pub->publish(*msg);

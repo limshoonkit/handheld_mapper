@@ -29,8 +29,24 @@
 
 #include "driver_node.h"
 #include "lds.h"
+#include <unistd.h>
+#include <iostream>
+#include <fcntl.h>
+#include <sys/ipc.h>
+#include <sys/mman.h>
+
+using std::chrono::microseconds;
+using std::chrono::seconds;
+using namespace std;
+
 
 namespace livox_ros {
+typedef struct 
+{
+  int64_t high;
+  int64_t low;
+}time_stamp;
+
 
 /** Send pointcloud message Data to ros subscriber or save them in rosbag file */
 typedef enum {
@@ -68,7 +84,6 @@ using ImuMsg = sensor_msgs::msg::Imu;
 using PointCloud = pcl::PointCloud<pcl::PointXYZI>;
 
 class DriverNode;
-
 class Lddc final {
  public:
 #ifdef BUILDING_ROS1
@@ -95,7 +110,7 @@ class Lddc final {
 
  public:
   Lds *lds_;
-
+  time_stamp *pointt;
  private:
   void PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar);
   void PollingLidarImuData(uint8_t index, LidarDevice *lidar);

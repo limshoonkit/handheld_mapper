@@ -26,37 +26,10 @@ def generate_launch_description():
 
     # Configuration paths
     bringup_package = get_package_share_directory('handheld_bringup')
-    zed_config_common = os.path.join(bringup_package, 'config', 'zed_config', 'common_stereo.yaml')
-    zed_config_camera = os.path.join(bringup_package, 'config', 'zed_config', 'zed2i.yaml')
     mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options.yaml')
     livox_config = os.path.join(bringup_package, 'config', 'MID360_config.json')
     hik_camera_config = os.path.join(bringup_package, 'config', 'hik_camera.yaml')
     rviz_config_path = os.path.join(bringup_package, 'config', 'rviz', 'handheld_sensors.rviz')
-
-    # Zed camera component
-    zed_component = ComposableNode(
-        package='zed_components',
-        plugin='stereolabs::ZedCamera',
-        name='zed_node',
-        parameters=[
-        # YAML files
-            zed_config_common,  # Common parameters
-            zed_config_camera,  # Camera related parameters
-        ],
-        extra_arguments=[{'use_intra_process_comms': True}]
-    )
-
-    zed_module_container = ComposableNodeContainer(
-        name='zed_module_container',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container',
-        arguments=['--ros-args', '--log-level', 'info'],
-        output='screen',
-        composable_node_descriptions=[
-            zed_component,
-        ]
-    )
 
     livox_driver = Node(
         package='livox_ros_driver2',
@@ -97,9 +70,6 @@ def generate_launch_description():
             '--storage', 'mcap',
             '--storage-config-file', mcap_writer_options,
             '-o', bag_output_path,
-            'zed_node/right/image_rect_color',
-            'zed_node/left/image_rect_color',
-            'zed_node/imu/data',
             'livox/lidar',
             'livox/imu',
             'hik_camera/image',
@@ -125,7 +95,6 @@ def generate_launch_description():
         use_rviz_arg,
 
         # Nodes
-        zed_module_container,
         livox_driver,
         mvs_driver,
         rviz_node,

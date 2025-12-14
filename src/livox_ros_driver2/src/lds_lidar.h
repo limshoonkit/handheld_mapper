@@ -84,6 +84,7 @@ class LdsLidar final : public Lds {
   std::string path_;
   LidarSummaryInfo lidar_summary_info_;
 
+
   bool auto_connect_mode_;
   uint32_t whitelist_count_;
   volatile bool is_initialized_;

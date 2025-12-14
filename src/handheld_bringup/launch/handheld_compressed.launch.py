@@ -28,7 +28,7 @@ def generate_launch_description():
     bringup_package = get_package_share_directory('handheld_bringup')
     zed_config_common = os.path.join(bringup_package, 'config', 'zed_config', 'common_stereo.yaml')
     zed_config_camera = os.path.join(bringup_package, 'config', 'zed_config', 'zed2i.yaml')
-    mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options.yaml')
+    mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options_compression.yaml')
     livox_config = os.path.join(bringup_package, 'config', 'MID360_config.json')
     hik_camera_config = os.path.join(bringup_package, 'config', 'hik_camera.yaml')
     rviz_config_path = os.path.join(bringup_package, 'config', 'rviz', 'handheld_sensors.rviz')
@@ -97,6 +97,7 @@ def generate_launch_description():
             '--storage', 'mcap',
             '--storage-config-file', mcap_writer_options,
             '-o', bag_output_path,
+            '--max-cache-size', '100000000',  # 100MB cache limit
             'zed_node/right/image_rect_color',
             'zed_node/left/image_rect_color',
             'zed_node/imu/data',
@@ -131,4 +132,3 @@ def generate_launch_description():
         rviz_node,
         record_delay,
     ])
-

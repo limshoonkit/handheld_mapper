@@ -1,4 +1,5 @@
 build/*
-log/*
+*log/*
+*Log/*
 install/*
 .vscode/*

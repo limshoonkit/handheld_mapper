@@ -8,7 +8,7 @@ pushd `pwd` > /dev/null
 cd `dirname $0`
 echo "Working Path: "`pwd`
 
-ROS_VERSION=""
+ROS_VERSION="ROS1"
 ROS_HUMBLE=""
 
 # Set working ROS version
