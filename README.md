@@ -1,4 +1,6 @@
 # UoSM Handheld Mapper
+**Note** :
+The livox_ros_driver2 is custom, not from the livox provider. It writes and reads from a timeshare file from home/{user} directory to sync.
 
 ## Build 
 

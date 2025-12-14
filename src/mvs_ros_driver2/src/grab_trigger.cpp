@@ -230,6 +230,12 @@ static void *WorkThread(void *pUser) {
         int64_t b = pointt->low;
         double time_pc = b / 1000000000.0;
         rcv_time = rclcpp::Time(static_cast<int64_t>(time_pc * 1e9));
+        printf("[Camera] Using shared timestamp: %ld (%.6f sec)\n", b, time_pc);
+      }
+      else
+      {
+        printf("[Camera] Using system time. trigger_enable=%d, pointt=%p, pointt->low=%ld\n",
+               trigger_enable, (void*)pointt, (pointt != MAP_FAILED && pointt != nullptr) ? pointt->low : 0);
       }
 
       stConvertParam.nWidth = stImageInfo.nWidth;
