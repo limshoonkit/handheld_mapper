@@ -52,7 +52,10 @@ namespace livox_ros
         publish_frq_(frq),
         frame_id_(frame_id),
         enable_lidar_bag_(lidar_bag),
-        enable_imu_bag_(imu_bag)
+        enable_imu_bag_(imu_bag),
+        pointt(nullptr),
+        timeshare_initialized_(false),
+        timeshare_fd_(-1)
   {
     publish_period_ns_ = kNsPerSecond / publish_frq_;
     lds_ = nullptr;
@@ -71,7 +74,10 @@ namespace livox_ros
         data_src_(data_src),
         output_type_(output_type),
         publish_frq_(frq),
-        frame_id_(frame_id)
+        frame_id_(frame_id),
+        pointt(nullptr),
+        timeshare_initialized_(false),
+        timeshare_fd_(-1)
   {
     publish_period_ns_ = kNsPerSecond / publish_frq_;
     lds_ = nullptr;
@@ -114,7 +120,14 @@ namespace livox_ros
       }
     }
 #endif
-    munmap(pointt, sizeof(time_stamp) * 1);
+    if (pointt != nullptr) {
+      munmap(pointt, sizeof(time_stamp));
+      pointt = nullptr;
+    }
+    if (timeshare_fd_ >= 0) {
+      close(timeshare_fd_);
+      timeshare_fd_ = -1;
+    }
     std::cout << "lddc destory!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
   }
 
@@ -184,7 +197,6 @@ namespace livox_ros
       PollingLidarImuData(lidar_id, lidar);
     }
   }
-  bool isOpended = false;
   void Lddc::PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar)
   {
     LidarDataQueue *p_queue = &lidar->data;
@@ -194,27 +206,38 @@ namespace livox_ros
     }
 
     //******************************************************************** add code
-    if (isOpended == false)
+    if (!timeshare_initialized_)
     {
       const char *user_name = getlogin();
       std::string path_for_time_stamp = "/home/" + std::string(user_name) + "/timeshare";
 
       const char *shared_file_name = path_for_time_stamp.c_str();
-      int fd = open(shared_file_name, O_CREAT | O_RDWR | O_TRUNC, 0666);
-      if (fd == -1)
+      timeshare_fd_ = open(shared_file_name, O_CREAT | O_RDWR | O_TRUNC, 0666);
+      if (timeshare_fd_ == -1)
       {
-        ROS_ERROR("open failed\n");
-        isOpended = false;
+        printf("Failed to open timeshare file: %s\n", shared_file_name);
+        timeshare_initialized_ = false;
       }
       else
       {
-        ROS_ERROR("open code: %d\n", fd);
-        isOpended = true;
+        printf("Opened timeshare file: %s (fd: %d)\n", shared_file_name, timeshare_fd_);
+        lseek(timeshare_fd_, sizeof(time_stamp), SEEK_SET);
+        write(timeshare_fd_, "", 1);
+        pointt = (time_stamp *)mmap(NULL, sizeof(time_stamp),
+                                    PROT_READ | PROT_WRITE, MAP_SHARED, timeshare_fd_, 0);
+        if (pointt == MAP_FAILED)
+        {
+          printf("mmap failed for timeshare file\n");
+          close(timeshare_fd_);
+          timeshare_fd_ = -1;
+          timeshare_initialized_ = false;
+        }
+        else
+        {
+          timeshare_initialized_ = true;
+          printf("Successfully initialized timeshare memory\n");
+        }
       }
-      lseek(fd, sizeof(time_stamp) * 1, SEEK_SET);
-      write(fd, "", 1);
-      pointt = (time_stamp *)mmap(NULL, sizeof(time_stamp) * 1,
-                                  PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     }
     //********************************************************************
 
@@ -278,10 +301,12 @@ namespace livox_ros
       uint64_t timestamp = 0;
       InitPointcloud2Msg(pkg, cloud, timestamp);
       PublishPointcloud2Data(index, timestamp, cloud);
-      pointt->low = timestamp;
-      // printf("****************timestamp=%ld\n", timestamp);
-
-      ROS_ERROR("pointt->low=%ld\n", pointt->low);
+      if (pointt != nullptr) {
+        pointt->low = timestamp;
+        // printf("****************timestamp=%ld\n", timestamp);
+        // printf("pointt->low=%ld\n", pointt->low);
+      }
+      
     }
   }
 
@@ -306,10 +331,12 @@ namespace livox_ros
       {
         timestamp = pkg.base_time;
       }
-      pointt->low = timestamp;
-      // ROS_ERROR("Custom Point: %f\n", pointt->low*0.000000001);
-             // printf("****************timestamp=%ld\n", timestamp);
-      // ROS_ERROR("****************PublishCustomPointcloud\n");
+      if (pointt != nullptr) {
+        pointt->low = timestamp;
+        // printf("Custom Point: %f\n", pointt->low * 0.000000001);
+        // printf("****************timestamp=%ld\n", timestamp);
+        // printf("****************PublishCustomPointcloud\n");
+      }
 
       PublishCustomPointData(livox_msg, index);
     }
@@ -345,7 +372,7 @@ namespace livox_ros
       FillPointsToPclMsg(pkg, cloud);
       PublishPclData(index, timestamp, cloud);
 
-      ROS_ERROR("****************PublishPclMsg\n");
+      // ROS_ERROR("****************PublishPclMsg\n");
     }
     return;
   }

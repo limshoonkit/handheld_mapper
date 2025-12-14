@@ -111,6 +111,8 @@ class Lddc final {
  public:
   Lds *lds_;
   time_stamp *pointt;
+  bool timeshare_initialized_;
+  int timeshare_fd_;
  private:
   void PollingLidarPointCloudData(uint8_t index, LidarDevice *lidar);
   void PollingLidarImuData(uint8_t index, LidarDevice *lidar);
