@@ -64,7 +64,7 @@ def generate_launch_description():
         name='livox_lidar_publisher',
         output='screen',
         parameters=[
-            {'xfer_format': 0},
+            {'xfer_format': 1},
             {'multi_topic': 0},
             {'data_src': 0},
             {'publish_freq': 10.0},
