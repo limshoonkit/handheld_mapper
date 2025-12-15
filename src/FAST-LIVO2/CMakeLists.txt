@@ -72,12 +72,15 @@ else()
 endif()
 
 # Check for mimalloc support
-find_package(mimalloc QUIET)
-if(mimalloc_FOUND)
-  message(STATUS "mimalloc found")
-else()
-  message(STATUS "mimalloc not found, proceeding without it")
-endif()
+# find_package(mimalloc QUIET)
+# if(mimalloc_FOUND)
+#   message(STATUS "mimalloc found")
+# else()
+#   message(STATUS "mimalloc not found, proceeding without it")
+# endif()
+
+# Set CMake prefix paths to prioritize source-built libraries
+set(CMAKE_PREFIX_PATH "/usr/local;${CMAKE_PREFIX_PATH}")
 
 # Find ament and required dependencies
 find_package(ament_cmake REQUIRED)
@@ -96,10 +99,21 @@ find_package(vikit_ros REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED)
-find_package(OpenCV REQUIRED)
+
+# Find source-built PCL 1.15
+set(PCL_DIR "/usr/local/share/pcl-1.15")
+find_package(PCL 1.15 REQUIRED)
+message(STATUS "PCL version: ${PCL_VERSION}")
+message(STATUS "PCL include dirs: ${PCL_INCLUDE_DIRS}")
+
+# Find source-built OpenCV 4.13
+set(OpenCV_DIR "/usr/local/lib/cmake/opencv4")
+find_package(OpenCV 4.13 REQUIRED)
+message(STATUS "OpenCV version: ${OpenCV_VERSION}")
+message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
+
 find_package(Sophus REQUIRED)
-find_package(Boost REQUIRED COMPONENTS thread)
+find_package(Boost REQUIRED COMPONENTS thread date_time)
 
 # Include directories for dependencies
 include_directories(
@@ -180,9 +194,9 @@ target_link_libraries(fastlivo_mapping
 )
 
 # Link mimalloc if found
-if(mimalloc_FOUND)
-  target_link_libraries(fastlivo_mapping mimalloc)
-endif()
+# if(mimalloc_FOUND)
+#   target_link_libraries(fastlivo_mapping mimalloc)
+# endif()
 
 # Install the executable
 install(TARGETS
