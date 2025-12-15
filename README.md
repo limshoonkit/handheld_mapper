@@ -7,7 +7,7 @@ FAST-LIVO2 is from [https://github.com/hku-mars/FAST-LIVO2/issues/128]
 **Note :-**
 
 1. The livox_ros_driver2 is custom, not from the livox provider. It writes and reads from a timeshare file from home/{user} directory to sync.
-2. The FAST-LIVO2 voxelmap is unbounded, hence memory will grow indefinitely [https://github.com/hku-mars/FAST-LIVO2/issues/386]. Jetson Orin with 16GB RAM may force shutdown if map for long period. Other related issue regarding build configurations [https://github.com/hku-mars/FAST-LIVO2/issues/68] , [https://github.com/hku-mars/FAST-LIVO2/issues/101] , [https://github.com/hku-mars/FAST-LIVO2/issues/289] 
+2. The FAST-LIVO2 voxelmap is unbounded, hence memory will grow indefinitely [https://github.com/hku-mars/FAST-LIVO2/issues/386] , [https://github.com/hku-mars/FAST-LIVO2/issues/224] , [https://github.com/hku-mars/FAST-LIVO2/issues/258] , [https://github.com/hku-mars/FAST-LIVO2/issues/289]. Jetson Orin with 16GB RAM may force shutdown if map for long period. Other related issue regarding build configurations [https://github.com/hku-mars/FAST-LIVO2/issues/68] , [https://github.com/hku-mars/FAST-LIVO2/issues/101] , [https://github.com/hku-mars/FAST-LIVO2/issues/146]. 
 
 
 
