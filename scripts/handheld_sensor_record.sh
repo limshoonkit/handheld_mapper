@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
-source /home/nvidia/uosm_handheld_mapper/install/setup.bash
+source /home/$USER/handheld_mapper/install/setup.bash
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BAG_OUTPUT_PATH="/home/nvidia/Desktop/data/record_${TIMESTAMP}"
+BAG_OUTPUT_PATH="/home/$USER/Desktop/data/record_${TIMESTAMP}"
 
 # Create parent directory only (not the bag output directory itself)
 mkdir -p "/home/nvidia/Desktop/data"

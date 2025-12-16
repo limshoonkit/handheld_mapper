@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Launch Live Mapping
-Exec=gnome-terminal -- /home/nvidia/Desktop/handheld_live_mapping.sh
+Exec=gnome-terminal -- /home/$USER/handheld_mapper/scripts/handheld_live_mapping.sh
 Terminal=true
 Icon=utilities-terminal
 Categories=Utility;

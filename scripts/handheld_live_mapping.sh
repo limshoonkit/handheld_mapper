@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-source /home/nvidia/uosm_handheld_mapper/install/setup.bash
+source /home/$USER/handheld_mapper/install/setup.bash
 
 
 # Start ROS2 with the selected launch file in background

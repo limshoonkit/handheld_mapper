@@ -19,11 +19,6 @@ FAST-LIVO2 is from [https://github.com/hku-mars/FAST-LIVO2/issues/128]
 - ZED SDK 4.2.5
 - MVS 3.0.1 build20240420 [ARM]
 
-Tested with source build of
-```
-opencv-4.13.0
-pcl-1.15.1
-```
 
 ![front](./media/front.jpeg)
 ![back](./media/back.jpeg)
