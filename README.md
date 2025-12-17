@@ -19,6 +19,9 @@ FAST-LIVO2 is from [https://github.com/hku-mars/FAST-LIVO2/issues/128]
 - [ZED SDK 5.1](https://download.stereolabs.com/zedsdk/5.1/l4t36.4/jetsons?_gl=1*fphl2z*_gcl_au*MTY3ODk4NTkwMy4xNzY1OTExMTAz) 
 - [MVS 3.0.1 ARM](https://www.hikrobotics.com/en/machinevision/service/download/)
 - [Livox-SDK2 v1.2.5](https://github.com/Livox-SDK/Livox-SDK2/blob/master/README.md)
+- OpenCV v4.8.0
+- PCL  v1.12.1
+- Eigen v3.4.0
 
 ![front](./media/front.jpeg)
 ![back](./media/back.jpeg)
