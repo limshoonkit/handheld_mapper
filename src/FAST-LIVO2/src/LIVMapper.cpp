@@ -12,16 +12,14 @@ which is included as part of this source code package.
 
 #include "LIVMapper.h"
 
-#include <glog/logging.h>
 #include <yaml-cpp/yaml.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-LIVMapper::LIVMapper(rclcpp::Node::SharedPtr &node, std::string node_name, const rclcpp::NodeOptions &options, const std::string &camera_config)
+LIVMapper::LIVMapper(rclcpp::Node::SharedPtr &node, std::string node_name, const rclcpp::NodeOptions &options)
     : node_(std::make_shared<rclcpp::Node>(node_name, options)),
       ext_t_(0, 0, 0),
-      ext_r_(M3D::Identity()),
-      camera_config_(camera_config)
+      ext_r_(M3D::Identity())
 {
   extrin_t_.assign(3, 0.0);
   extrin_r_.assign(9, 0.0);
@@ -56,6 +54,7 @@ LIVMapper::~LIVMapper() {}
 
 void LIVMapper::ReadParameters()
 {
+  node_->declare_parameter("camara_config", "");
   node_->declare_parameter("common.lid_topic", "/livox/lidar");
   node_->declare_parameter("common.imu_topic", "/livox/imu");
   node_->declare_parameter("common.ros_driver_bug_fix", false);
@@ -114,6 +113,7 @@ void LIVMapper::ReadParameters()
   node_->declare_parameter("publish.pub_effect_point_en", false);
   node_->declare_parameter("publish.dense_map_en", false);
 
+  camera_config_ = node_->get_parameter("camera_config").as_string();
   lid_topic_ = node_->get_parameter("common.lid_topic").as_string();
   imu_topic_ = node_->get_parameter("common.imu_topic").as_string();
   ros_driver_fix_en_ = node_->get_parameter("common.ros_driver_bug_fix").as_bool();

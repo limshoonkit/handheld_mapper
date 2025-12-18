@@ -32,7 +32,7 @@ which is included as part of this source code package.
 
 class LIVMapper {
  public:
-  LIVMapper(rclcpp::Node::SharedPtr &node, std::string node_name, const rclcpp::NodeOptions & options, const std::string &camera_config);
+  LIVMapper(rclcpp::Node::SharedPtr &node, std::string node_name, const rclcpp::NodeOptions & options);
   ~LIVMapper();
   void InitializeSubscribersAndPublishers();
   void InitializeComponents();

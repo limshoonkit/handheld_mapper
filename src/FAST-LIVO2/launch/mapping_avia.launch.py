@@ -1,83 +1,106 @@
-from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch.conditions import IfCondition
-from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from ament_index_python.packages import get_package_share_directory
+#!/usr/bin/python3
+# -- coding: utf-8 --**
+
 import os
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
+from ament_index_python.packages import get_package_share_directory
+from launch_ros.actions import Node
 
 def generate_launch_description():
-    # Get package directory
-    pkg_fast_livo = get_package_share_directory('fast_livo')
+    
+    # Find path
+    config_file_dir = os.path.join(get_package_share_directory("fast_livo"), "config")
+    rviz_config_file = os.path.join(get_package_share_directory("fast_livo"), "rviz_cfg", "fast_livo2.rviz")
 
-    # Declare launch arguments
-    rviz_arg = DeclareLaunchArgument(
-        'rviz',
-        default_value='true',
-        description='Launch RViz visualization'
+    #Load parameters
+    avia_config_cmd = os.path.join(config_file_dir, "avia.yaml")
+    camera_config_cmd = os.path.join(config_file_dir, "camera_pinhole.yaml")
+
+    # Param use_rviz
+    use_rviz_arg = DeclareLaunchArgument(
+        "use_rviz",
+        default_value="true",
+        description="Whether to launch Rviz2",
+    )
+
+    avia_config_arg = DeclareLaunchArgument(
+        'avia_params_file',
+        default_value=avia_config_cmd,
+        description='Full path to the ROS2 parameters file to use for fast_livo2 nodes',
     )
 
     camera_config_arg = DeclareLaunchArgument(
-        'camera_config',
-        default_value=PathJoinSubstitution([
-            FindPackageShare('fast_livo'),
-            'config',
-            'camera_pinhole.yaml'
-        ]),
-        description='Camera configuration file path'
+        'camera_params_file',
+        default_value=camera_config_cmd,
+        description='Full path to the ROS2 parameters file to use for vikit_ros nodes',
     )
 
-    # Path to parameter file
-    params_file = PathJoinSubstitution([
-        FindPackageShare('fast_livo'),
-        'config',
-        'avia.yaml'
-    ])
+    # https://github.com/ros-navigation/navigation2/blob/1c68c212db01f9f75fcb8263a0fbb5dfa711bdea/nav2_bringup/launch/navigation_launch.py#L40
+    use_respawn_arg = DeclareLaunchArgument(
+        'use_respawn', 
+        default_value='True',
+        description='Whether to respawn if a node crashes. Applied when composition is disabled.')
 
-    # Fast-LIVO mapping node
-    fastlivo_mapping_node = Node(
-        package='fast_livo',
-        executable='fastlivo_mapping',
-        name='laserMapping',
-        output='screen',
-        parameters=[params_file],
-        arguments=['--camera_config', LaunchConfiguration('camera_config')],
-        additional_env={'MALLOC_TRIM_THRESHOLD_': '1073741824', 'MALLOC_ARENA_MAX': '4'}
-    )
-
-    # RViz node
-    rviz_config_file = PathJoinSubstitution([
-        FindPackageShare('fast_livo'),
-        'rviz_cfg',
-        'fast_livo2.rviz'
-    ])
-
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', rviz_config_file],
-        condition=IfCondition(LaunchConfiguration('rviz'))
-    )
-
-    # Image republish node (compressed to raw)
-    image_republish_node = Node(
-        package='image_transport',
-        executable='republish',
-        name='republish',
-        arguments=['compressed', 'raw'],
-        remappings=[
-            ('in/compressed', '/left_camera/image/compressed'),
-            ('out', '/left_camera/image')
-        ],
-        output='screen'
-    )
+    avia_params_file = LaunchConfiguration('avia_params_file')
+    camera_params_file = LaunchConfiguration('camera_params_file')
+    use_respawn = LaunchConfiguration('use_respawn')
 
     return LaunchDescription([
-        rviz_arg,
+        use_rviz_arg,
+        avia_config_arg,
         camera_config_arg,
-        fastlivo_mapping_node,
-        rviz_node,
-        image_republish_node
+        use_respawn_arg,
+
+        # play ros2 bag
+        # ExecuteProcess(
+        #     cmd=[['ros2 bag play ', '~/datasets/Retail_Street ', '--clock ', "-l"]], 
+        #     shell=True
+        # ),
+
+        # republish compressed image to raw image
+        # https://robotics.stackexchange.com/questions/110939/how-do-i-remap-compressed-video-to-raw-video-in-ros2
+        # ros2 run image_transport republish compressed raw --ros-args --remap in:=/left_camera/image --remap out:=/left_camera/image
+        Node(
+            package="image_transport",
+            executable="republish",
+            name="republish",
+            arguments=[ # Array of strings/parametric arguments that will end up in process's argv
+                'compressed', 
+                'raw',
+            ],
+            remappings=[
+                ("in",  "/left_camera/image"), 
+                ("out", "/left_camera/image")
+            ],
+            output="screen",
+            respawn=use_respawn,
+        ),
+        
+        Node(
+            package="fast_livo",
+            executable="fastlivo_mapping",
+            name="laserMapping",
+            parameters=[
+                avia_params_file,
+                {"camera_config": camera_params_file},
+            ],
+            # https://docs.ros.org/en/humble/How-To-Guides/Getting-Backtraces-in-ROS-2.html
+            prefix=[
+                # ("gdb -ex run --args"),
+                # ("valgrind --log-file=./valgrind_report.log --tool=memcheck --leak-check=full --show-leak-kinds=all -s --track-origins=yes --show-reachable=yes --undef-value-errors=yes --track-fds=yes")
+            ],
+            output="screen"
+        ),
+
+        Node(
+            condition=IfCondition(LaunchConfiguration("use_rviz")),
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            arguments=["-d", rviz_config_file],
+            output="screen"
+        ),
     ])

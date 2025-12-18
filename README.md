@@ -2,13 +2,17 @@
 
 Custom Rig for https://github.com/hku-mars/LIV_handhold_2, support ROS2 Humble. 
 
-FAST-LIVO2 is based on [https://github.com/yqmy0814/FAST-LIVO2] and[https://github.com/hku-mars/FAST-LIVO2/issues/128]
+FAST-LIVO2 is based on [https://github.com/yqmy0814/FAST-LIVO2] and [https://github.com/hku-mars/FAST-LIVO2/issues/128]
 
 **Note :-**
 
 1. The livox_ros_driver2 is custom, not from the livox provider. It writes and reads from a timeshare file from home/{user} directory to sync.
 2. The FAST-LIVO2 voxelmap is unbounded, hence memory will grow indefinitely [https://github.com/hku-mars/FAST-LIVO2/issues/386] , [https://github.com/hku-mars/FAST-LIVO2/issues/224] , [https://github.com/hku-mars/FAST-LIVO2/issues/258] , [https://github.com/hku-mars/FAST-LIVO2/issues/289]. Jetson Orin with 16GB RAM may force shutdown if map for long period. Other related issue regarding build configurations [https://github.com/hku-mars/FAST-LIVO2/issues/68] , [https://github.com/hku-mars/FAST-LIVO2/issues/101] , [https://github.com/hku-mars/FAST-LIVO2/issues/146]. 
-
+2. The libusb from MVS (/opt/MVS/lib/aarch64/libusb-1.0.so.0) may conflict with system installation (/lib/aarch64-linux-gnu/libusb-1.0.so.0). It is recommended to delete the libusb from MVS or export the system libusb after the MVS with LD_LIBRARY_PATH
+```
+export LD_LIBRARY_PATH=/opt/MVS/lib/aarch64:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
+```
 
 
 ## Hardware / Environment
@@ -63,6 +67,10 @@ source ./install/setup.bash
 ros2 launch handheld_bringup fast_livo2.launch.py
 
 # ros2 bag play ./data/record_20251214_173541/ -p --remap /hik_camera/image:=/left_camera/image
+
+# source ./install/setup.bash
+# ros2 launch fast_livo mapping_avia.launch.py
+# ros2 bag play ./data/fast_livo/test_bag/ros2/ -p
 ```
 
 ![Sample0](./media/sample0.jpeg)

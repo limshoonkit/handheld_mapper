@@ -12,8 +12,6 @@ which is included as part of this source code package.
 
 #include "vio.h"
 
-#include <glog/logging.h>
-
 VIOManager::VIOManager() {
   // downSizeFilter.setLeafSize(0.2, 0.2, 0.2);
 }
