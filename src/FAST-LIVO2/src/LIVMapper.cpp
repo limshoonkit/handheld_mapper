@@ -17,7 +17,7 @@ which is included as part of this source code package.
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 LIVMapper::LIVMapper(rclcpp::Node::SharedPtr &node, std::string node_name, const rclcpp::NodeOptions &options)
-    : node_(std::make_shared<rclcpp::Node>(node_name, options)),
+    : node_(node),
       ext_t_(0, 0, 0),
       ext_r_(M3D::Identity())
 {
@@ -54,7 +54,7 @@ LIVMapper::~LIVMapper() {}
 
 void LIVMapper::ReadParameters()
 {
-  node_->declare_parameter("camara_config", "");
+  node_->declare_parameter("camera_config", "");
   node_->declare_parameter("common.lid_topic", "/livox/lidar");
   node_->declare_parameter("common.imu_topic", "/livox/imu");
   node_->declare_parameter("common.ros_driver_bug_fix", false);
@@ -65,14 +65,14 @@ void LIVMapper::ReadParameters()
   node_->declare_parameter("vio.normal_en", true);
   node_->declare_parameter("vio.inverse_composition_en", false);
   node_->declare_parameter("vio.max_iterations", 5);
-  node_->declare_parameter("vio.img_point_cov", 100.0);
+  node_->declare_parameter("vio.img_point_cov", 100);
   node_->declare_parameter("vio.raycast_en", false);
   node_->declare_parameter("vio.exposure_estimate_en", true);
   node_->declare_parameter("vio.inv_expo_cov", 0.2);
   node_->declare_parameter("vio.grid_size", 5);
   node_->declare_parameter("vio.patch_pyrimid_level", 3);
   node_->declare_parameter("vio.patch_size", 8);
-  node_->declare_parameter("vio.outlier_threshold", 1000.0);
+  node_->declare_parameter("vio.outlier_threshold", 1000);
 
   node_->declare_parameter("time_offset.exposure_time_init", 0.0);
   node_->declare_parameter("time_offset.img_time_offset", 0.0);
@@ -124,14 +124,14 @@ void LIVMapper::ReadParameters()
   normal_en_ = node_->get_parameter("vio.normal_en").as_bool();
   inverse_composition_en_ = node_->get_parameter("vio.inverse_composition_en").as_bool();
   max_iterations_ = node_->get_parameter("vio.max_iterations").as_int();
-  img_point_cov_ = node_->get_parameter("vio.img_point_cov").as_double();
+  img_point_cov_ = node_->get_parameter("vio.img_point_cov").as_int();
   raycast_en_ = node_->get_parameter("vio.raycast_en").as_bool();
   exposure_estimate_en_ = node_->get_parameter("vio.exposure_estimate_en").as_bool();
   inv_expo_cov_ = node_->get_parameter("vio.inv_expo_cov").as_double();
   grid_size_ = node_->get_parameter("vio.grid_size").as_int();
   patch_pyrimid_level_ = node_->get_parameter("vio.patch_pyrimid_level").as_int();
   patch_size_ = node_->get_parameter("vio.patch_size").as_int();
-  outlier_threshold_ = node_->get_parameter("vio.outlier_threshold").as_double();
+  outlier_threshold_ = node_->get_parameter("vio.outlier_threshold").as_int();
 
   exposure_time_init_ = node_->get_parameter("time_offset.exposure_time_init").as_double();
   img_time_offset_ = node_->get_parameter("time_offset.img_time_offset").as_double();
@@ -761,9 +761,8 @@ void LIVMapper::PropImuOnce(StatesGroup &imu_prop_state, const double dt,
 void LIVMapper::ImuPropCallback()
 {
   if (p_imu_->imu_need_init_ || !new_imu_ || !ekf_finish_once_)
-  {
     return;
-  }
+  
   mtx_buffer_imu_prop_.lock();
   new_imu_ = false; // 控制propagate频率和IMU频率一致
   if (imu_prop_enable_ && !prop_imu_buffer_.empty())
@@ -775,7 +774,7 @@ void LIVMapper::ImuPropCallback()
       // drop all useless imu pkg
       while (
           (!prop_imu_buffer_.empty() &&
-           rclcpp::Time(prop_imu_buffer_.front().header.stamp).seconds() < latest_ekf_time_))
+           toSec(prop_imu_buffer_.front().header.stamp) < latest_ekf_time_))
       {
         prop_imu_buffer_.pop_front();
       }
@@ -783,7 +782,7 @@ void LIVMapper::ImuPropCallback()
       for (int i = 0; i < prop_imu_buffer_.size(); i++)
       {
         double t_from_lidar_end_time =
-            rclcpp::Time(prop_imu_buffer_[i].header.stamp).seconds() - latest_ekf_time_;
+            toSec(prop_imu_buffer_[i].header.stamp) - latest_ekf_time_;
         double dt = t_from_lidar_end_time - last_t_from_lidar_end_time;
         V3D acc_imu(prop_imu_buffer_[i].linear_acceleration.x,
                     prop_imu_buffer_[i].linear_acceleration.y,
@@ -805,7 +804,7 @@ void LIVMapper::ImuPropCallback()
                   newest_imu_.angular_velocity.y,
                   newest_imu_.angular_velocity.z);
       double t_from_lidar_end_time =
-          rclcpp::Time(newest_imu_.header.stamp).seconds() - latest_ekf_time_;
+          toSec(newest_imu_.header.stamp) - latest_ekf_time_;
       double dt = t_from_lidar_end_time - last_t_from_lidar_end_time;
       PropImuOnce(imu_propagate_, dt, acc_imu, omg_imu);
       last_t_from_lidar_end_time = t_from_lidar_end_time;
@@ -896,25 +895,24 @@ void LIVMapper::RGBpointBodyToWorld(PointXYZIN const *const pi,
   po->intensity = pi->intensity;
 }
 
-void LIVMapper::PointCloud2Cbk(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+void LIVMapper::PointCloud2Cbk(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg_in)
 {
   if (!lidar_en_)
     return;
   mtx_buffer_.lock();
-
-  double cur_head_time = rclcpp::Time(msg->header.stamp).seconds() + lidar_time_offset_;
+  sensor_msgs::msg::PointCloud2::SharedPtr msg(new sensor_msgs::msg::PointCloud2(*msg_in));
   // cout<<"got feature"<<endl;
-  if (cur_head_time < last_timestamp_lidar_)
+  if (toSec(msg->header.stamp) < last_timestamp_lidar_)
   {
     RCLCPP_ERROR(node_->get_logger(), "lidar loop back, clear buffer");
     lid_raw_data_buffer_.clear();
   }
-  // RCLCPP_INFO(node_->get_logger(), "get point cloud at time: %.6f", rclcpp::Time(msg->header.stamp).seconds());
+  // RCLCPP_INFO(node_->get_logger(), "get point cloud at time: %.6f", toSec(msg->header.stamp));
   PointCloudXYZIN::Ptr ptr(new PointCloudXYZIN());
   p_pre_->Process(msg, ptr);
   lid_raw_data_buffer_.push_back(ptr);
-  lid_header_time_buffer_.push_back(cur_head_time);
-  last_timestamp_lidar_ = cur_head_time;
+  lid_header_time_buffer_.push_back(toSec(msg->header.stamp));
+  last_timestamp_lidar_ = toSec(msg->header.stamp);
 
   mtx_buffer_.unlock();
   sig_buffer_.notify_all();
@@ -927,13 +925,11 @@ void LIVMapper::LivoxCbk(const livox_ros_driver2::msg::CustomMsg::ConstSharedPtr
   mtx_buffer_.lock();
   livox_ros_driver2::msg::CustomMsg::SharedPtr msg(new livox_ros_driver2::msg::CustomMsg(*msg_in));
 
-  if (abs(last_timestamp_imu_ - toSec(msg->header.stamp)) > 1.0 &&
-      !imu_buffer_.empty())
+  if (abs(last_timestamp_imu_ - toSec(msg->header.stamp)) > 1.0 && !imu_buffer_.empty())
   {
-    double timediff_imu_wrt_lidar =
-        last_timestamp_imu_ - toSec(msg->header.stamp);
+    double timediff_imu_wrt_lidar = last_timestamp_imu_ - toSec(msg->header.stamp);
     RCLCPP_INFO(node_->get_logger(), "\033[95mSelf sync IMU and LiDAR, HARD time lag is %.10lf \n\033[0m", timediff_imu_wrt_lidar - 0.100);
-    // imu_time_offset_ = timediff_imu_wrt_lidar;
+    // imu_time_offset = timediff_imu_wrt_lidar;
   }
 
   double cur_head_time = toSec(msg->header.stamp);
@@ -962,15 +958,14 @@ void LIVMapper::LivoxCbk(const livox_ros_driver2::msg::CustomMsg::ConstSharedPtr
   sig_buffer_.notify_all();
 }
 
-void LIVMapper::ImuCbk(const sensor_msgs::msg::Imu::SharedPtr msg_in)
+void LIVMapper::ImuCbk(const sensor_msgs::msg::Imu::ConstSharedPtr &msg_in)
 {
   if (last_timestamp_lidar_ < 0.0)
     return;
-  // RCLCPP_INFO(node_->get_logger(), "get imu at time: %.6f", rclcpp::Time(msg_in->header.stamp).seconds());
+  RCLCPP_INFO(node_->get_logger(), "get imu at time: %.6f", toSec(msg_in->header.stamp));
   sensor_msgs::msg::Imu::SharedPtr msg(new sensor_msgs::msg::Imu(*msg_in));
-  msg->header.stamp =
-      rclcpp::Time(rclcpp::Time(msg->header.stamp).seconds() - imu_time_offset_, RCL_ROS_TIME);
-  double timestamp = rclcpp::Time(msg->header.stamp).seconds();
+  msg->header.stamp = toStamp(toSec(msg->header.stamp) - imu_time_offset_);
+  double timestamp = toSec(msg->header.stamp);
 
   if (fabs(last_timestamp_lidar_ - timestamp) > 0.5 && (!ros_driver_fix_en_))
   {
@@ -979,7 +974,7 @@ void LIVMapper::ImuCbk(const sensor_msgs::msg::Imu::SharedPtr msg_in)
 
   if (ros_driver_fix_en_)
     timestamp += std::round(last_timestamp_lidar_ - timestamp);
-  msg->header.stamp = rclcpp::Time(timestamp, RCL_ROS_TIME);
+  msg->header.stamp = toStamp(timestamp);
 
   mtx_buffer_.lock();
 
@@ -1026,11 +1021,11 @@ cv::Mat LIVMapper::GetImageFromMsg(const sensor_msgs::msg::Image::SharedPtr msg_
 }
 
 // static int i = 0;
-void LIVMapper::ImageCbk(const sensor_msgs::msg::Image::SharedPtr msg_in)
+void LIVMapper::ImageCbk(const sensor_msgs::msg::Image::ConstSharedPtr &msg_in)
 {
   if (!img_en_)
     return;
-  sensor_msgs::msg::Image::SharedPtr msg = msg_in;
+  sensor_msgs::msg::Image::SharedPtr msg(new sensor_msgs::msg::Image(*msg_in));
   // if ((abs(toSec(msg->header.stamp) - last_timestamp_img) > 0.2 &&
   // last_timestamp_img > 0) || sync_jump_flag_)
   // {

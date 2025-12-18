@@ -1,6 +1,6 @@
 build/*
 *log/*
-*Log/*
+src/FAST-LIVO2/Log/*
 install/*
 .vscode/*
 

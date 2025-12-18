@@ -56,10 +56,10 @@ class LIVMapper {
   void PointBodyToWorld(const PointXYZIN &pi, PointXYZIN &po);
 
   void RGBpointBodyToWorld(PointXYZIN const *const pi, PointXYZIN *const po);
-  void PointCloud2Cbk(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
+  void PointCloud2Cbk(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg_in);
   void LivoxCbk(const livox_ros_driver2::msg::CustomMsg::ConstSharedPtr &msg_in);
-  void ImuCbk(const sensor_msgs::msg::Imu::SharedPtr msg_in);
-  void ImageCbk(const sensor_msgs::msg::Image::SharedPtr msg_in);
+  void ImuCbk(const sensor_msgs::msg::Imu::ConstSharedPtr &msg_in);
+  void ImageCbk(const sensor_msgs::msg::Image::ConstSharedPtr &msg_in);
   void PublishImgRGB(VIOManagerPtr vio_manager);
   void PublishFrameWorld(VIOManagerPtr vio_manager);
   void PublishVisualSubMap();

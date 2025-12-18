@@ -28,6 +28,14 @@ inline double toSec(const builtin_interfaces::msg::Time& time) {
   return rclcpp::Time(time).seconds();
 }
 
+inline rclcpp::Time toStamp(double timestamp)
+{
+  int32_t sec = std::floor(timestamp);
+  auto nanosec_d = (timestamp - std::floor(timestamp)) * 1e9;
+  uint32_t nanosec = nanosec_d;
+  return rclcpp::Time(sec, nanosec);
+}
+
 #define print_line std::cout << __FILE__ << ", " << __LINE__ << std::endl;
 #define G_m_s2 (9.81)   // Gravaty const in GuangDong/China
 #define DIM_STATE (19)  // Dimension of states (Let Dim(SO(3)) = 3)
