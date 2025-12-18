@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.8)
 project(fast_livo)
 
 set(CMAKE_BUILD_TYPE "Release")
@@ -7,10 +7,6 @@ message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-IF("$ENV{ROS_DISTRO}" STRLESS "iron")
-  add_definitions(-DPRE_ROS_IRON)
-ENDIF()
 
 # Set common compile options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fexceptions")
@@ -72,112 +68,100 @@ else()
 endif()
 
 # Check for mimalloc support
-# find_package(mimalloc QUIET)
-# if(mimalloc_FOUND)
-#   message(STATUS "mimalloc found")
-# else()
-#   message(STATUS "mimalloc not found, proceeding without it")
-# endif()
+find_package(mimalloc QUIET)
+if(mimalloc_FOUND)
+  message(STATUS "mimalloc found")
+else()
+  message(STATUS "mimalloc not found, proceeding without it")
+endif()
 
-# Set CMake prefix paths to prioritize source-built libraries
-set(CMAKE_PREFIX_PATH "/usr/local;${CMAKE_PREFIX_PATH}")
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 # Find ament and required dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclpy REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
+find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
-find_package(livox_ros_driver2 REQUIRED)
-find_package(vikit_common REQUIRED)
-find_package(vikit_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(livox_ros_driver2 REQUIRED)
+
+add_subdirectory(vikit_common)
+
+# glog
+find_package(Glog REQUIRED)
+include_directories(${GLOG_INCLUDE_DIR})
+
+# gflags
+find_package(Gflags REQUIRED)
+include_directories(${GFLAGS_INCLUDE_DIR})
+
 find_package(Eigen3 REQUIRED)
-
-# Find source-built PCL 1.15
-set(PCL_DIR "/usr/local/share/pcl-1.15")
-find_package(PCL 1.15 REQUIRED)
-message(STATUS "PCL version: ${PCL_VERSION}")
-message(STATUS "PCL include dirs: ${PCL_INCLUDE_DIRS}")
-
-# Find source-built OpenCV 4.13
-set(OpenCV_DIR "/usr/local/lib/cmake/opencv4")
-find_package(OpenCV 4.13 REQUIRED)
-message(STATUS "OpenCV version: ${OpenCV_VERSION}")
-message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
-
-find_package(Sophus REQUIRED)
-find_package(Boost REQUIRED COMPONENTS thread date_time)
+find_package(PCL REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(Boost REQUIRED COMPONENTS thread)
+find_package(yaml-cpp REQUIRED)
 
 # Include directories for dependencies
 include_directories(
+  include
+  vikit_common/include
   ${EIGEN3_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
-  ${Sophus_INCLUDE_DIRS}
-  ${vikit_common_INCLUDE_DIRS}
-  ${vikit_ros_INCLUDE_DIRS}
-  include
 )
 
+# Set ROS2 dependencies list
 set(dependencies
   rclcpp
-  rclpy
   geometry_msgs
   nav_msgs
   sensor_msgs
+  std_msgs
   visualization_msgs
-  cv_bridge
-  vikit_common
-  vikit_ros
-  image_transport
   pcl_ros
   pcl_conversions
+  tf2
   tf2_ros
+  tf2_geometry_msgs
+  cv_bridge
+  image_transport
   livox_ros_driver2
 )
 
-set(COMMON_DEPENDENCIES OpenMP::OpenMP_CXX)
-
-# link_directories(${COMMON_DEPENDENCIES}
-#   ${vikit_common_LIBRARIES}/libvikit_common.so
-#   ${vikit_ros_LIBRARIES}/libvikit_ros.so
-# )
-
 # Add libraries
-add_library(vio src/vio.cpp src/frame.cpp src/visual_point.cpp)
+add_library(vio src/vio.cpp src/image_frame.cpp)
 add_library(lio src/voxel_map.cpp)
 add_library(pre src/preprocess.cpp)
 add_library(imu_proc src/IMU_Processing.cpp)
 add_library(laser_mapping src/LIVMapper.cpp)
-add_library(utils src/utils.cpp)
 
-ament_target_dependencies(vio ${dependencies} )
+# Add ROS2 dependencies to all libraries
+ament_target_dependencies(vio ${dependencies})
 ament_target_dependencies(lio ${dependencies})
 ament_target_dependencies(pre ${dependencies})
 ament_target_dependencies(imu_proc ${dependencies})
 ament_target_dependencies(laser_mapping ${dependencies})
 
-# linking libraries or executables to public dependencies
-target_link_libraries(laser_mapping 
-    ${CMAKE_SOURCE_DIR}/../../install/vikit_common/lib/libvikit_common.so 
-    ${CMAKE_SOURCE_DIR}/../../install/vikit_ros/lib/libvikit_ros.so
-    ${COMMON_DEPENDENCIES}
-)
-target_link_libraries(vio ${COMMON_DEPENDENCIES})
-target_link_libraries(lio utils ${COMMON_DEPENDENCIES})
-target_link_libraries(pre ${COMMON_DEPENDENCIES})
-target_link_libraries(imu_proc ${COMMON_DEPENDENCIES})
-
 # Add the main executable
 add_executable(fastlivo_mapping src/main.cpp)
 
+# Add ROS2 dependencies to executable
 ament_target_dependencies(fastlivo_mapping ${dependencies})
 
 # Link libraries to the executable
@@ -189,41 +173,48 @@ target_link_libraries(fastlivo_mapping
   imu_proc
   ${PCL_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  ${Sophus_LIBRARIES}
+  glog::glog
+  ${GFLAGS_LIBRARIES}
   ${Boost_LIBRARIES}
+  vikit_plugin
 )
 
-# Link mimalloc if found
-# if(mimalloc_FOUND)
-#   target_link_libraries(fastlivo_mapping mimalloc)
-# endif()
+# Link OpenMP if found
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(fastlivo_mapping OpenMP::OpenMP_CXX)
+endif()
 
-# Install the executable
+# Link mimalloc if found
+if(mimalloc_FOUND)
+  target_link_libraries(fastlivo_mapping mimalloc)
+endif()
+
+# Install targets
 install(TARGETS
   fastlivo_mapping
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(
-  DIRECTORY config launch rviz_cfg
+# Install libraries
+install(TARGETS
+  vio
+  lio
+  pre
+  imu_proc
+  laser_mapping
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+# Install directories
+install(DIRECTORY
+  config
+  launch
+  rviz_cfg
   DESTINATION share/${PROJECT_NAME}
 )
 
 # Export dependencies
-ament_export_dependencies(
-  rclcpp
-  rclpy
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  pcl_ros
-  pcl_conversions
-  tf2_ros
-  livox_ros_driver2
-  Eigen3
-  PCL
-  OpenCV 
-  Sophus
-)
-
+ament_export_dependencies(${dependencies})
 ament_package()

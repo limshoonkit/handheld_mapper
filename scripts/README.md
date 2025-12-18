@@ -5,8 +5,8 @@
 ```
 chmod +x handheld_live_mapping.sh
 chmod +x handheld_sensor_record.sh
-mv ./launch_mapping.desktop ~/Desktop
-mv ./launch_sensor_recorder.desktop ~/Desktop
+cp ./launch_mapping.desktop ~/Desktop
+cp ./launch_sensor_recorder.desktop ~/Desktop
 ```
 
 2. Right click on both .desktop icon to enable launch

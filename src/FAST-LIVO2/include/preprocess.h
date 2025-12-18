@@ -1,4 +1,4 @@
-/* 
+/*
 This file is part of FAST-LIVO2: Fast, Direct LiDAR-Inertial-Visual Odometry.
 
 Developer: Chunran Zheng <zhengcr@connect.hku.hk>
@@ -13,16 +13,18 @@ which is included as part of this source code package.
 #ifndef PREPROCESS_H_
 #define PREPROCESS_H_
 
-#include "common_lib.h"
-#include <livox_ros_driver2/msg/custom_msg.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <pcl_conversions/pcl_conversions.h>
+#include <rclcpp/rclcpp.hpp>
+#include <livox_ros_driver2/msg/custom_msg.hpp>
+
+#include "common_lib.h"
 
 using namespace std;
 
 #define IS_VALID(a) ((abs(a) > 1e8) ? true : false)
 
-enum LiDARFeature
-{
+enum LiDARFeature {
   Nor,
   Poss_Plane,
   Real_Plane,
@@ -31,30 +33,17 @@ enum LiDARFeature
   Wire,
   ZeroPoint
 };
-enum Surround
-{
-  Prev,
-  Next
-};
-enum E_jump
-{
-  Nr_nor,
-  Nr_zero,
-  Nr_180,
-  Nr_inf,
-  Nr_blind
-};
+enum Surround { Prev, Next };
+enum E_jump { Nr_nor, Nr_zero, Nr_180, Nr_inf, Nr_blind };
 
-struct orgtype
-{
+struct orgtype {
   double range;
   double dista;
   double angle[2];
   double intersect;
   E_jump edj[2];
   LiDARFeature ftype;
-  orgtype()
-  {
+  orgtype() {
     range = 0;
     edj[Prev] = Nr_nor;
     edj[Next] = Nr_nor;
@@ -64,26 +53,24 @@ struct orgtype
 };
 
 /*** Velodyne ***/
-namespace velodyne_ros
-{
-struct EIGEN_ALIGN16 Point
-{
+namespace velodyne_ros {
+struct EIGEN_ALIGN16 Point {
   PCL_ADD_POINT4D;
   float intensity;
   float time;
   std::uint16_t ring;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-} // namespace velodyne_ros
-POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_ros::Point,
-                                  (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(float, time, time)(std::uint16_t, ring, ring))
+}  // namespace velodyne_ros
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+    velodyne_ros::Point,
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
+        float, time, time)(std::uint16_t, ring, ring))
 /****************/
 
 /*** Ouster ***/
-namespace ouster_ros
-{
-struct EIGEN_ALIGN16 Point
-{
+namespace ouster_ros {
+struct EIGEN_ALIGN16 Point {
   PCL_ADD_POINT4D;
   float intensity;
   std::uint32_t t;
@@ -93,90 +80,112 @@ struct EIGEN_ALIGN16 Point
   std::uint32_t range;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-} // namespace ouster_ros
-POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point, (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)
-                                  (std::uint32_t, t, t)(std::uint16_t, reflectivity,
-                                                        reflectivity)(std::uint8_t, ring, ring)(std::uint16_t, ambient, ambient)(std::uint32_t, range, range))
+}  // namespace ouster_ros
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+    ouster_ros::Point,
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
+        std::uint32_t, t, t)(std::uint16_t, reflectivity, reflectivity)(
+        std::uint8_t, ring, ring)(std::uint16_t, ambient,
+                                  ambient)(std::uint32_t, range, range))
 /****************/
 
 /*** Hesai_XT32 ***/
-namespace xt32_ros
-{
-struct EIGEN_ALIGN16 Point
-{
+namespace xt32_ros {
+struct EIGEN_ALIGN16 Point {
   PCL_ADD_POINT4D;
   float intensity;
   double timestamp;
   std::uint16_t ring;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-} // namespace xt32_ros
-POINT_CLOUD_REGISTER_POINT_STRUCT(xt32_ros::Point,
-                                  (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(double, timestamp, timestamp)(std::uint16_t, ring, ring))
+}  // namespace xt32_ros
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+    xt32_ros::Point,
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
+        double, timestamp, timestamp)(std::uint16_t, ring, ring))
 /*****************/
 
 /*** Hesai_Pandar128 ***/
-namespace Pandar128_ros
-{
-struct EIGEN_ALIGN16 Point
-{
+namespace Pandar128_ros {
+struct EIGEN_ALIGN16 Point {
   PCL_ADD_POINT4D;
-  float timestamp;
-  uint8_t ring;
+  uint8_t intensity;
+  double timestamp;
+  uint16_t ring;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-} // namespace Pandar128_ros
-POINT_CLOUD_REGISTER_POINT_STRUCT(Pandar128_ros::Point,
-                                  (float, x, x)(float, y, y)(float, z, z)(float, timestamp, timestamp))
+}  // namespace Pandar128_ros
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+    Pandar128_ros::Point,
+    (float, x, x)(float, y, y)(float, z, z)(std::uint8_t, intensity, intensity)(
+        double, timestamp, timestamp)(std::uint16_t, ring, ring))
 /*****************/
 
-class Preprocess
-{
-public:
+/*** Robosense_Airy ***/
+namespace robosense_ros {
+struct EIGEN_ALIGN16 Point {
+  PCL_ADD_POINT4D;
+  float intensity;
+  double timestamp;
+  uint16_t ring;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+}  // namespace robosense_ros
+POINT_CLOUD_REGISTER_POINT_STRUCT(
+    robosense_ros::Point,
+    (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
+        double, timestamp, timestamp)(std::uint16_t, ring, ring))
+/*****************/
+
+class Preprocess {
+ public:
   //   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   Preprocess();
   ~Preprocess();
 
-  void process(const livox_ros_driver2::msg::CustomMsg::SharedPtr &msg, PointCloudXYZI::Ptr &pcl_out);
-  void process(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg, PointCloudXYZI::Ptr &pcl_out);
-  void set(bool feat_en, int lid_type, double bld, int pfilt_num);
+  void Process(const sensor_msgs::msg::PointCloud2::SharedPtr &msg,
+               PointCloudXYZIN::Ptr &pcl_out);
+  void Process(const livox_ros_driver2::msg::CustomMsg::SharedPtr &msg,
+               PointCloudXYZIN::Ptr &pcl_out);
+  void Set(bool feat_en, int lid_type, double bld, int pfilt_num);
 
-  // sensor_msgs::msg::PointCloud2::ConstSharedPtr pointcloud;
-  PointCloudXYZI pl_full, pl_corn, pl_surf;
-  PointCloudXYZI pl_buff[128]; // maximum 128 line lidar
-  vector<orgtype> typess[128]; // maximum 128 line lidar
-  int lidar_type, point_filter_num, N_SCANS, SCAN_RATE;
-  
-  double blind, blind_sqr;
-  bool feature_enabled, given_offset_time;
-  std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> pub_full;
-  std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> pub_surf;
-  std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> pub_corn;
+  PointCloudXYZIN pl_full_, pl_corn_, pl_surf_;
+  PointCloudXYZIN pl_buff_[128];  // maximum 128 line lidar
+  vector<orgtype> typess_[128];   // maximum 128 line lidar
+  int lidar_type_, point_filter_num_, n_scans_;
 
-private:
-  void avia_handler(const livox_ros_driver2::msg::CustomMsg::SharedPtr &msg);
-  void oust64_handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
-  void velodyne_handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
-  void xt32_handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
-  void Pandar128_handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
-  void l515_handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
-  void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
-  void pub_func(PointCloudXYZI &pl, const rclcpp::Time &ct);
-  int plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
-  bool small_plane(const PointCloudXYZI &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct);
-  bool edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir);
+  double blind_, blind_sqr_;
+  bool feature_enabled_, given_offset_time_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_full_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_surf_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_corn_;
 
-  int group_size;
-  double disA, disB, inf_bound;
-  double limit_maxmid, limit_midmin, limit_maxmin;
-  double p2l_ratio;
-  double jump_up_limit, jump_down_limit;
-  double cos160;
-  double edgea, edgeb;
-  double smallp_intersect, smallp_ratio;
-  double vx, vy, vz;
+ private:
+  void AviaHandler(const livox_ros_driver2::msg::CustomMsg::SharedPtr &msg);
+  void Oust64Handler(const sensor_msgs::msg::PointCloud2::SharedPtr &msg);
+  void VelodyneHandler(const sensor_msgs::msg::PointCloud2::SharedPtr &msg);
+  void Xt32Handler(const sensor_msgs::msg::PointCloud2::SharedPtr &msg);
+  void Pandar128Handler(const sensor_msgs::msg::PointCloud2::SharedPtr &msg);
+  void RobosenseHandler(const sensor_msgs::msg::PointCloud2::SharedPtr &msg);
+  void L515Handler(const sensor_msgs::msg::PointCloud2::SharedPtr &msg);
+  void GiveFeature(PointCloudXYZIN &pl, vector<orgtype> &types);
+  void PubFunc(PointCloudXYZIN &pl, const rclcpp::Time &ct);
+  int PlaneJudge(const PointCloudXYZIN &pl, vector<orgtype> &types, uint i,
+                  uint &i_nex, Eigen::Vector3d &curr_direct);
+  bool EdgeJumpJudge(const PointCloudXYZIN &pl, vector<orgtype> &types,
+                       uint i, Surround nor_dir);
+
+  int group_size_;
+  double dis_a_, dis_b_, inf_bound_;
+  double limit_maxmid_, limit_midmin_, limit_maxmin_;
+  double p2l_ratio_;
+  double jump_up_limit_, jump_down_limit_;
+  double cos160_;
+  double edge_a_, edge_b_;
+  double smallp_intersect_, smallp_ratio_;
+  double vx_, vy_, vz_;
 };
 typedef std::shared_ptr<Preprocess> PreprocessPtr;
 
-#endif // PREPROCESS_H_
+#endif  // PREPROCESS_H_

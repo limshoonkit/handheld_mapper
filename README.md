@@ -2,7 +2,7 @@
 
 Custom Rig for https://github.com/hku-mars/LIV_handhold_2, support ROS2 Humble. 
 
-FAST-LIVO2 is from [https://github.com/hku-mars/FAST-LIVO2/issues/128]
+FAST-LIVO2 is based on [https://github.com/yqmy0814/FAST-LIVO2] and[https://github.com/hku-mars/FAST-LIVO2/issues/128]
 
 **Note :-**
 
@@ -30,6 +30,8 @@ FAST-LIVO2 is from [https://github.com/hku-mars/FAST-LIVO2/issues/128]
 
 ### For SL zed
 ```
+git submodule init
+git submodule update
 sudo apt update
 rosdep update
 rosdep install --from-paths src/zed-ros2-wrapper --ignore-src -r -y # install dependencies
@@ -37,6 +39,9 @@ rosdep install --from-paths src/zed-ros2-wrapper --ignore-src -r -y # install de
 
 ### Erase all and rebuild
 ```
+rosdep install --from-paths src/livox_ros_driver2 --ignore-src -r -y
+rosdep install --from-paths src/mvs_ros_driver2 --ignore-src -r -y
+rosdep install --from-paths src/FAST-LIVO2 --ignore-src -r -y
 ./src/livox_ros_driver2/build.sh humble
 ```
 
