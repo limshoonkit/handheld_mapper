@@ -76,10 +76,10 @@
 
     evo:
       seq_name: "UoSM_Building_01"
-      pose_output_en: false
+      pose_output_en: true
 
     pcd_save:
-      pcd_save_en: false
+      pcd_save_en: true
       colmap_output_en: true # need to set interval = -1
-      filter_size_pcd: 0.15
+      filter_size_pcd: 0.3
       interval: -1
