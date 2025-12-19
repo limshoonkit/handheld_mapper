@@ -6,7 +6,7 @@ FAST-LIVO2 is based on [https://github.com/yqmy0814/FAST-LIVO2] and [https://git
 
 **Note :-**
 
-1. The livox_ros_driver2 is custom, not from the livox provider. It writes and reads from a timeshare file from home/{user} directory to sync.
+1. The livox_ros_driver2 is custom, not from the livox provider. It writes and reads from a timeshare file from home/{user} directory to sync. Do also set a static IP 192.168.1.50 for you device connecting the LiDAR. 
 2. The FAST-LIVO2 voxelmap is unbounded, hence memory will grow indefinitely [https://github.com/hku-mars/FAST-LIVO2/issues/386] , [https://github.com/hku-mars/FAST-LIVO2/issues/224] , [https://github.com/hku-mars/FAST-LIVO2/issues/258] , [https://github.com/hku-mars/FAST-LIVO2/issues/289]. Jetson Orin with 16GB RAM may force shutdown if map for long period. Other related issue regarding build configurations [https://github.com/hku-mars/FAST-LIVO2/issues/68] , [https://github.com/hku-mars/FAST-LIVO2/issues/101] , [https://github.com/hku-mars/FAST-LIVO2/issues/146]. 
 2. The libusb from MVS (/opt/MVS/lib/aarch64/libusb-1.0.so.0) may conflict with system installation (/lib/aarch64-linux-gnu/libusb-1.0.so.0). It is recommended to delete the libusb from MVS or export the system libusb after the MVS with LD_LIBRARY_PATH
 ```

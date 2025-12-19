@@ -51,7 +51,6 @@ def generate_launch_description():
     camera_params_file = LaunchConfiguration('camera_params_file')
     use_respawn = LaunchConfiguration('use_respawn')
 
-
     livox_driver = Node(
         package='livox_ros_driver2',
         executable='livox_ros_driver2_node',
@@ -129,7 +128,7 @@ def generate_launch_description():
             name="laserMapping",
             parameters=[
                 livox_params_file,
-                camera_params_file,
+                {"camera_config": camera_params_file},
             ],
             # https://docs.ros.org/en/humble/How-To-Guides/Getting-Backtraces-in-ROS-2.html
             prefix=[

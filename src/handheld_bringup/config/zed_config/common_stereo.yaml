@@ -16,6 +16,8 @@
             svo_loop: false # Enable loop mode when using an SVO as input source. NOTE: ignored if SVO timestamping is used
             svo_realtime: false # if true the SVO will be played trying to respect the original framerate eventually skipping frames, otherwise every frame will be processed respecting the `pub_frame_rate` setting
             play_from_frame: 0 # Start playing the SVO from a specific frame
+            compression_mode: 2 # SVO compression mode: 0-LOSSLESS (huge files), 1-H264 (best), 2-H265 (smaller), 3-H264_LOSSLESS, 4-H265_LOSSLESS
+            recording_bitrate: 0 # Bitrate for SVO recording (0 = auto)
 
         general:
             camera_timeout_sec: 5

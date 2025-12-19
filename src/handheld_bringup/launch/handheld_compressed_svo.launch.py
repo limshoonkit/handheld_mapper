@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
@@ -10,52 +10,12 @@ from ament_index_python.packages import get_package_share_directory
 # Enable colored output
 os.environ["RCUTILS_COLORIZED_OUTPUT"] = "1"
 
-def launch_svo_recording(context, *args, **kwargs):
-    """Function to start SVO recording with resolved launch configurations"""
-    bag_output_path = LaunchConfiguration('bag_output_path').perform(context)
-    svo_compression = LaunchConfiguration('svo_compression').perform(context)
-    
-    svo_file_path = os.path.join(bag_output_path, 'zed_recording.svo2')
-    
-    # Start SVO recording via service call with proper service availability check
-    start_svo_recording = ExecuteProcess(
-        cmd=[
-            'bash', '-c',
-            f'echo "Waiting for ZED SVO recording service..." && '
-            f'timeout=60; '
-            f'while [ $timeout -gt 0 ]; do '
-            f'  if ros2 service list | grep -q "/zed/zed_node/start_svo_rec"; then '
-            f'    echo "Service available, starting SVO recording to: {svo_file_path}"; '
-            f'    sleep 1; '
-            f'    ros2 service call /zed/zed_node/start_svo_rec zed_interfaces/srv/StartSvoRec '
-            f'    \\"{{compression_mode: {svo_compression}, '
-            f'    svo_filename: \\\\\\"{svo_file_path}\\\\\\", '
-            f'    bitrate: 0, target_framerate: 0, input_transcode: false, gopsize: -1, adaptivebitrate: true, chunk_size: 16384}}\\"; '
-            f'    exit 0; '
-            f'  fi; '
-            f'  sleep 0.5; '
-            f'  timeout=$((timeout-1)); '
-            f'done; '
-            f'echo "ERROR: ZED service did not become available within 60 seconds" >&2; '
-            f'exit 1'
-        ],
-        output='screen',
-        shell=True
-    )
-    
-    return [start_svo_recording]
-
 def generate_launch_description():    
+    bag_output_path = LaunchConfiguration('bag_output_path')
     bag_output_path_arg = DeclareLaunchArgument(
         'bag_output_path',
-        default_value='/tmp/handheld_recording',  # Default fallback path
-        description='Output directory for ROS2 bag files and SVO'
-    )
-
-    svo_compression_arg = DeclareLaunchArgument(
-        'svo_compression',
-        default_value='5',  # https://www.stereolabs.com/docs/ros2/record_and_replay_data_with_ros_wrapper
-        description='SVO compression mode (0-5)'
+        default_value='data/calib_bag',  # relative
+        description='Output directory for ROS2 bag files'
     )
 
     use_rviz_arg = DeclareLaunchArgument(
@@ -129,17 +89,14 @@ def generate_launch_description():
         }]
     )
 
-    # Use OpaqueFunction to resolve LaunchConfiguration at runtime
-    svo_recording_action = OpaqueFunction(function=launch_svo_recording)
-
-    # Record only non-ZED topics to rosbag (ZED is recorded to SVO)
+    # ROS2 bag recording (ZED topics excluded - using SVO format instead)
     rosbag_record = ExecuteProcess(
         cmd=[
             'ros2', 'bag', 'record',
             '--storage', 'mcap',
             '--storage-config-file', mcap_writer_options,
-            '-o', LaunchConfiguration('bag_output_path'),
-            '--max-cache-size', '100000000',
+            '-o', bag_output_path,
+            '--max-cache-size', '100000000',  # 100MB cache limit
             'livox/lidar',
             'livox/imu',
             'hik_camera/image',
@@ -162,12 +119,10 @@ def generate_launch_description():
     return LaunchDescription([
         # Launch arguments
         bag_output_path_arg,
-        svo_compression_arg,
         use_rviz_arg,
 
         # Nodes
         zed_module_container,
-        svo_recording_action,
         livox_driver,
         mvs_driver,
         rviz_node,

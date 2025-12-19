@@ -6,7 +6,7 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BAG_OUTPUT_PATH="/home/$USER/Desktop/data/record_${TIMESTAMP}"
 
 # Create parent directory only (not the bag output directory itself)
-mkdir -p "/home/nvidia/Desktop/data"
+mkdir -p "/home/$USER/Desktop/data"
 
 # Use Zenity to select the desired launch file
 LAUNCH_FILE=$(zenity --list --title="Select Launch File" \
@@ -28,35 +28,57 @@ setsid ros2 launch handheld_bringup $LAUNCH_FILE \
     bag_output_path:=${BAG_OUTPUT_PATH} &
 ROS_PID=$!
 
-# Wait for services to become available
+# Wait for nodes to initialize
 sleep 5
 
-# Show a single "Stop Recording" button
-zenity --info --text="Recording in progress.\n\nData will be saved to:\n${BAG_OUTPUT_PATH}\n\nClick OK to stop recording." --ok-label="Stop Recording" --width=400
-
-# Stop SVO recording if using the SVO launch file
-echo "Stopping recording gracefully..."
+# Start SVO recording if using the SVO launch file
 if [[ "$LAUNCH_FILE" == "handheld_compressed_svo.launch.py" ]]; then
-    echo "Stopping SVO recording..."
-    
-    # Check if the service exists before calling it
-    timeout=10
-    service_found=false
+    SVO_OUTPUT_PATH="${BAG_OUTPUT_PATH}/zed_recording.svo2"
+    echo "Waiting for ZED SVO recording service..."
+
+    # Wait for service to be available (max 30 seconds)
+    timeout=60
     while [ $timeout -gt 0 ]; do
-        if ros2 service list | grep -q "/zed/zed_node/stop_svo_rec"; then
-            service_found=true
-            break
+        if ros2 service list | grep -q "/zed_node/start_svo_rec"; then
+            echo "Service available, starting SVO recording to: ${SVO_OUTPUT_PATH}"
+            sleep 1
+
+            # Start SVO recording with compression mode 2 (H.265)
+            ros2 service call /zed_node/start_svo_rec zed_interfaces/srv/StartSvoRec \
+                "{compression_mode: 2, svo_filename: '${SVO_OUTPUT_PATH}', bitrate: 0, target_framerate: 0, input_transcode: false, gopsize: -1, adaptivebitrate: true, chunk_size: 16384}"
+
+            if [ $? -eq 0 ]; then
+                echo "SVO recording started successfully!"
+                break
+            else
+                echo "Failed to start SVO recording"
+            fi
         fi
         sleep 0.5
         timeout=$((timeout-1))
     done
-    
-    if [ "$service_found" = true ]; then
-        ros2 service call /zed/zed_node/stop_svo_rec std_srvs/srv/Trigger || echo "Failed to call stop_svo_rec service"
-        sleep 2
-    else
-        echo "Warning: stop_svo_rec service not available, ZED node may have already stopped"
+
+    if [ $timeout -eq 0 ]; then
+        echo "WARNING: ZED service did not become available within 30 seconds"
+        zenity --warning --text="Warning: Could not start SVO recording.\nZED service not available.\n\nContinuing with ROS bag only..." --width=400
     fi
+fi
+
+# Show a single "Stop Recording" button
+if [[ "$LAUNCH_FILE" == "handheld_compressed_svo.launch.py" ]]; then
+    zenity --info --text="Recording in progress.\n\nROS Bag: ${BAG_OUTPUT_PATH}\nZED SVO: ${SVO_OUTPUT_PATH}\n\nClick OK to stop recording." --ok-label="Stop Recording" --width=450
+else
+    zenity --info --text="Recording in progress.\n\nData will be saved to:\n${BAG_OUTPUT_PATH}\n\nClick OK to stop recording." --ok-label="Stop Recording" --width=400
+fi
+
+echo "Stopping recording gracefully..."
+
+# Stop SVO recording if using the SVO launch file
+if [[ "$LAUNCH_FILE" == "handheld_compressed_svo.launch.py" ]]; then
+    echo "Stopping SVO recording..."
+    ros2 service call /zed_node/stop_svo_rec std_srvs/srv/Trigger 2>/dev/null || true
+    sleep 2
+    echo "SVO recording stopped"
 fi
 
 # Send SIGINT to entire process group
@@ -71,4 +93,8 @@ if kill -0 ${ROS_PID} 2>/dev/null; then
     kill -SIGKILL -${ROS_PID} 2>/dev/null || true
 fi
 
-zenity --info --text="Recording stopped successfully!\n\nData saved to:\n${BAG_OUTPUT_PATH}" --width=400
+if [[ "$LAUNCH_FILE" == "handheld_compressed_svo.launch.py" ]]; then
+    zenity --info --text="Recording stopped successfully!\n\nROS Bag: ${BAG_OUTPUT_PATH}\nZED SVO: ${SVO_OUTPUT_PATH}" --width=450
+else
+    zenity --info --text="Recording stopped successfully!\n\nData saved to:\n${BAG_OUTPUT_PATH}" --width=400
+fi
