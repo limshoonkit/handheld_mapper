@@ -105,7 +105,7 @@ def generate_launch_description():
     )
 
     record_delay = TimerAction(
-        period=5.0,
+        period=3.0,
         actions=[rosbag_record]
     )
 

@@ -3,10 +3,9 @@ set -e
 source /home/$USER/handheld_mapper/install/setup.bash
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BAG_OUTPUT_PATH="/home/$USER/Desktop/data/record_${TIMESTAMP}"
-
-# Create parent directory only (not the bag output directory itself)
-mkdir -p "/home/$USER/Desktop/data"
+BAG_OUTPUT_PATH="/home/$USER/Desktop/data/rosbag_${TIMESTAMP}"
+SVO_OUTPUT_DIR="/home/$USER/Desktop/data/svo_${TIMESTAMP}"
+mkdir -p ${SVO_OUTPUT_DIR}
 
 # Use Zenity to select the desired launch file
 LAUNCH_FILE=$(zenity --list --title="Select Launch File" \
@@ -33,7 +32,7 @@ sleep 5
 
 # Start SVO recording if using the SVO launch file
 if [[ "$LAUNCH_FILE" == "handheld_compressed_svo.launch.py" ]]; then
-    SVO_OUTPUT_PATH="${BAG_OUTPUT_PATH}/zed_recording.svo2"
+    SVO_OUTPUT_PATH="${SVO_OUTPUT_DIR}/zed_recording.svo2"
     echo "Waiting for ZED SVO recording service..."
 
     # Wait for service to be available (max 30 seconds)
@@ -44,8 +43,8 @@ if [[ "$LAUNCH_FILE" == "handheld_compressed_svo.launch.py" ]]; then
             sleep 1
 
             # Start SVO recording with compression mode 2 (H.265)
-            ros2 service call /zed_node/start_svo_rec zed_interfaces/srv/StartSvoRec \
-                "{compression_mode: 2, svo_filename: '${SVO_OUTPUT_PATH}', bitrate: 0, target_framerate: 0, input_transcode: false, gopsize: -1, adaptivebitrate: true, chunk_size: 16384}"
+            ros2 service call /zed_node/start_svo_rec zed_msgs/srv/StartSvoRec \
+                "{svo_filename: '${SVO_OUTPUT_PATH}', compression_mode: 2}"
 
             if [ $? -eq 0 ]; then
                 echo "SVO recording started successfully!"

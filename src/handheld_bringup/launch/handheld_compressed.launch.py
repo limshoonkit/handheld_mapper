@@ -98,8 +98,8 @@ def generate_launch_description():
             '--storage-config-file', mcap_writer_options,
             '-o', bag_output_path,
             '--max-cache-size', '100000000',  # 100MB cache limit
-            'zed_node/right/image_rect_color',
-            'zed_node/left/image_rect_color',
+            'zed_node/left/color/rect/image',
+            'zed_node/right/color/rect/image',
             'zed_node/imu/data',
             'livox/lidar',
             'livox/imu',
