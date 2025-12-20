@@ -6,14 +6,17 @@ FAST-LIVO2 is based on [https://github.com/yqmy0814/FAST-LIVO2] and [https://git
 
 **Note :-**
 
-1. The livox_ros_driver2 is custom, not from the livox provider. It writes and reads from a timeshare file from home/{user} directory to sync. Do also set a static IP 192.168.1.50 for you device connecting the LiDAR. 
-2. The FAST-LIVO2 voxelmap is unbounded, hence memory will grow indefinitely [https://github.com/hku-mars/FAST-LIVO2/issues/386] , [https://github.com/hku-mars/FAST-LIVO2/issues/224] , [https://github.com/hku-mars/FAST-LIVO2/issues/258] , [https://github.com/hku-mars/FAST-LIVO2/issues/289]. Jetson Orin with 16GB RAM may force shutdown if map for long period. Other related issue regarding build configurations [https://github.com/hku-mars/FAST-LIVO2/issues/68] , [https://github.com/hku-mars/FAST-LIVO2/issues/101] , [https://github.com/hku-mars/FAST-LIVO2/issues/146]. 
-3. The libusb from MVS (/opt/MVS/lib/aarch64/libusb-1.0.so.0) may conflict with system installation (/lib/aarch64-linux-gnu/libusb-1.0.so.0). It is recommended to delete the libusb from MVS or export the system libusb after the MVS with LD_LIBRARY_PATH
+1. **livox_ros_driver2** is custom, not the official version from Livox. It reads and writes from a time-share file located in `home/${User}/timeshare` for synchronization. Ensure to set a static IP of `192.168.1.50` for the device connected to the Livox LiDAR. 
+2. The **FAST-LIVO2 voxelmap** is unbounded, which means memory usage will grow indefinitely. This could potentially lead to issues such as a forced shutdown when mapping for extended periods on systems with limited memory, like the Jetson Orin (16GB RAM). 
+   - Relevant issues: [#386](https://github.com/hku-mars/FAST-LIVO2/issues/386), [#224](https://github.com/hku-mars/FAST-LIVO2/issues/224), [#258](https://github.com/hku-mars/FAST-LIVO2/issues/258), [#289](https://github.com/hku-mars/FAST-LIVO2/issues/289)
+   - Build configuration issues: [#68](https://github.com/hku-mars/FAST-LIVO2/issues/68), [#101](https://github.com/hku-mars/FAST-LIVO2/issues/101), [#146](https://github.com/hku-mars/FAST-LIVO2/issues/146)
+   
+3. **libusb** from MVS (`/opt/MVS/lib/aarch64/libusb-1.0.so.0`) may conflict with the system installation (`/lib/aarch64-linux-gnu/libusb-1.0.so.0`). It is recommended to either delete the MVS version or set the system's `libusb` with the following commands:
 ```
 export LD_LIBRARY_PATH=/opt/MVS/lib/aarch64:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 ```
-4. Using cyclondds and mcap storage
+4. This repo uses cyclondds and mcap storage. Get it with:
 ```
 sudo apt install ros-humble-rmw-cyclonedds-cpp ros-humble-rosbag2-storage-mcap
 ```
