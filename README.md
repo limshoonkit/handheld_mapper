@@ -49,6 +49,7 @@ rosdep install --from-paths src/zed-ros2-wrapper --ignore-src -r -y # install de
 rosdep install --from-paths src/livox_ros_driver2 --ignore-src -r -y
 rosdep install --from-paths src/mvs_ros_driver2 --ignore-src -r -y
 rosdep install --from-paths src/FAST-LIVO2 --ignore-src -r -y
+rosdep install --from-paths src/ros2_jetson_stats --ignore-src --rosdistro humble -y
 ./src/livox_ros_driver2/build.sh humble
 ```
 

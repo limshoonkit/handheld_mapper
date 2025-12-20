@@ -3,20 +3,33 @@
 
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, TimerAction
+from launch.actions import DeclareLaunchArgument, TimerAction, ExecuteProcess
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    
+    bag_output_path = LaunchConfiguration('bag_output_path')
+    bag_output_path_arg = DeclareLaunchArgument(
+        'bag_output_path',
+        default_value='/home/nvidia/Desktop/data/fast_livo2_bag',
+        description='Output directory for ROS2 bag files'
+    )
+
+    record_bag_arg = DeclareLaunchArgument(
+        'record_bag',
+        default_value='False',
+        description='Whether to record ROS2 bag files'
+    )
+
     # Find path
     bringup_package = get_package_share_directory('handheld_bringup')
     config_file_dir = os.path.join(bringup_package, "config", "fast-livo2")
     rviz_config_file = os.path.join(get_package_share_directory("fast_livo"), "rviz_cfg", "fast_livo2.rviz")
     livox_config = os.path.join(bringup_package, 'config', 'MID360_config.json')
     hik_camera_config = os.path.join(bringup_package, 'config', 'hik_camera_fast_livo2.yaml')
+    mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options.yaml')
 
     #Load parameters
     livox_config_cmd = os.path.join(config_file_dir, "mid360.yaml")
@@ -86,9 +99,69 @@ def generate_launch_description():
         ],
     )
 
+    fast_livo_node = Node(
+        package="fast_livo",
+        executable="fastlivo_mapping",
+        name="laserMapping",
+        parameters=[
+            livox_params_file,
+            {"camera_config": camera_params_file},
+        ],
+        # https://docs.ros.org/en/humble/How-To-Guides/Getting-Backtraces-in-ROS-2.html
+        prefix=[
+            # ("gdb -ex run --args"),
+            # ("valgrind --log-file=./valgrind_report.log --tool=memcheck --leak-check=full --show-leak-kinds=all -s --track-origins=yes --show-reachable=yes --undef-value-errors=yes --track-fds=yes")
+        ],
+        remappings=[
+            # ('/rgb/image', '/left_camera/image'),
+        ],
+        output="screen"
+    )
+
+    rviz_node = Node(
+        condition=IfCondition(LaunchConfiguration("use_rviz")),
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        arguments=["-d", rviz_config_file],
+        output="screen"
+    )
+
+    jetson_stats_node = Node(
+        package='ros2_jetson_stats',
+        executable='ros2_jtop',
+        name='ros2_jtop',
+        condition=IfCondition(LaunchConfiguration('record_bag')),
+        parameters=[
+            {'interval': 0.1} # 0.1 ~ 10Hz max
+        ],
+        output='screen',
+    )
+
     sensor_warmup = TimerAction(
-        period=2.0,  # delay in seconds for init
+        period=1.0,  # delay in seconds for init
         actions=[livox_driver, mvs_driver]
+    )
+
+        # ROS2 bag recording
+    rosbag_record = ExecuteProcess(
+        cmd=[
+            'ros2', 'bag', 'record',
+            '--storage', 'mcap',
+            '--storage-config-file', mcap_writer_options,
+            '-o', bag_output_path,
+            'diagnostics',
+            'livox/lidar',
+            'livox/imu',
+            'hik_camera/image',
+        ],
+        output='screen',
+    )
+
+    record_delay = TimerAction(
+        condition=IfCondition(LaunchConfiguration('record_bag')),
+        period=5.0,  # delay in seconds for init
+        actions=[rosbag_record]
     )
 
     return LaunchDescription([
@@ -96,59 +169,12 @@ def generate_launch_description():
         livox_config_arg,
         camera_config_arg,
         use_respawn_arg,
+        bag_output_path_arg,
+        record_bag_arg,
 
-        # play ros2 bag
-        # ExecuteProcess(
-        #     cmd=[['ros2 bag play ', '~/datasets/Retail_Street ', '--clock ', "-l"]], 
-        #     shell=True
-        # ),
-
-        # republish compressed image to raw image
-        # https://robotics.stackexchange.com/questions/110939/how-do-i-remap-compressed-video-to-raw-video-in-ros2
-        # ros2 run image_transport republish compressed raw --ros-args --remap in:=/left_camera/image --remap out:=/left_camera/image
-        # Node(
-        #     package="image_transport",
-        #     executable="republish",
-        #     name="republish",
-        #     arguments=[ # Array of strings/parametric arguments that will end up in process's argv
-        #         'compressed', 
-        #         'raw',
-        #     ],
-        #     remappings=[
-        #         ("in",  "/left_camera/image"), 
-        #         ("out", "/left_camera/image")
-        #     ],
-        #     output="screen",
-        #     respawn=use_respawn,
-        # ),
-        
-        Node(
-            package="fast_livo",
-            executable="fastlivo_mapping",
-            name="laserMapping",
-            parameters=[
-                livox_params_file,
-                {"camera_config": camera_params_file},
-            ],
-            # https://docs.ros.org/en/humble/How-To-Guides/Getting-Backtraces-in-ROS-2.html
-            prefix=[
-                # ("gdb -ex run --args"),
-                # ("valgrind --log-file=./valgrind_report.log --tool=memcheck --leak-check=full --show-leak-kinds=all -s --track-origins=yes --show-reachable=yes --undef-value-errors=yes --track-fds=yes")
-            ],
-            remappings=[
-                # ('/rgb/image', '/left_camera/image'),
-            ],
-            output="screen"
-        ),
-
-        Node(
-            condition=IfCondition(LaunchConfiguration("use_rviz")),
-            package="rviz2",
-            executable="rviz2",
-            name="rviz2",
-            arguments=["-d", rviz_config_file],
-            output="screen"
-        ),
-
+        fast_livo_node,
+        jetson_stats_node,
+        rviz_node,
         sensor_warmup,
+        record_delay,
     ])

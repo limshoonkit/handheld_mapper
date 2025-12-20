@@ -14,7 +14,7 @@ def generate_launch_description():
     bag_output_path = LaunchConfiguration('bag_output_path')
     bag_output_path_arg = DeclareLaunchArgument(
         'bag_output_path',
-        default_value='data/calib_bag', # relative
+        default_value='/home/nvidia/Desktop/data/calib_bag',
         description='Output directory for ROS2 bag files'
     )
 
