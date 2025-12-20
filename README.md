@@ -35,25 +35,25 @@ sudo apt install ros-humble-rmw-cyclonedds-cpp ros-humble-rosbag2-storage-mcap
 
 ## Build 
 
-### For SL zed
+### Get submodules and dependencies
 ```
 git submodule init
 git submodule update
 sudo apt update
 rosdep update
 rosdep install --from-paths src/zed-ros2-wrapper --ignore-src -r -y # install dependencies
-```
-
-### Erase all and rebuild
-```
 rosdep install --from-paths src/livox_ros_driver2 --ignore-src -r -y
 rosdep install --from-paths src/mvs_ros_driver2 --ignore-src -r -y
 rosdep install --from-paths src/FAST-LIVO2 --ignore-src -r -y
 rosdep install --from-paths src/ros2_jetson_stats --ignore-src --rosdistro humble -y
+```
+
+### Erase all and rebuild
+```
 ./src/livox_ros_driver2/build.sh humble
 ```
 
-### Build only pecific packages
+### Build only specific packages
 ```
 colcon build --packages-select handheld_bringup --symlink-install # eg handheld_bringup
 ```
