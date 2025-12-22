@@ -99,7 +99,7 @@ def generate_launch_description():
             '--max-cache-size', '100000000',  # 100MB cache limit
             'livox/lidar',
             'livox/imu',
-            'hik_camera/image',
+            'left_camera/image',
         ],
         output='screen',
     )

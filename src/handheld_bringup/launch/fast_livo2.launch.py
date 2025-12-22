@@ -38,7 +38,7 @@ def generate_launch_description():
     # Param use_rviz
     use_rviz_arg = DeclareLaunchArgument(
         "use_rviz",
-        default_value="True",
+        default_value="False",
         description="Whether to launch Rviz2",
     )
 
@@ -143,7 +143,7 @@ def generate_launch_description():
         actions=[livox_driver, mvs_driver]
     )
 
-        # ROS2 bag recording
+    # ROS2 bag recording
     rosbag_record = ExecuteProcess(
         cmd=[
             'ros2', 'bag', 'record',
@@ -153,7 +153,7 @@ def generate_launch_description():
             'diagnostics',
             'livox/lidar',
             'livox/imu',
-            'hik_camera/image',
+            'left_camera/image',
         ],
         output='screen',
     )

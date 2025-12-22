@@ -72,7 +72,7 @@ def generate_launch_description():
             '-o', bag_output_path,
             'livox/lidar',
             'livox/imu',
-            'hik_camera/image',
+            'left_camera/image',
         ],
         output='screen',
     )

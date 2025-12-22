@@ -102,7 +102,7 @@ def generate_launch_description():
             'zed_node/imu/data',
             'livox/lidar',
             'livox/imu',
-            'hik_camera/image',
+            'left_camera/image',
         ],
         output='screen',
     )

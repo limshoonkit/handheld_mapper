@@ -4,7 +4,7 @@
 # Camera Parameters. Adjust them!
 #--------------------------------------------------------------------------------------------
 SerialNumber: "DA7121461" # Not needed for single camera. Specify serial number for multiple cameras. 
-TopicName: "hik_camera/image"
+TopicName: "left_camera/image"
 
 TriggerEnable: 1 # 0 stands for Off, 1 stands for On
 
