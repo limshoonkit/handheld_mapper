@@ -1,8 +1,8 @@
 #!/bin/bash
 
 TARGET_DIRS=(
-    "$(rospack find fast_livo)/Log/Colmap/images"
-    "$(rospack find fast_livo)/Log/Colmap/sparse/0"
+    "$(ros2 pkg prefix fast_livo)/Log/Colmap/images"
+    "$(ros2 pkg prefix fast_livo)/Log/Colmap/sparse/0"
 )
 
 for dir in "${TARGET_DIRS[@]}"; do

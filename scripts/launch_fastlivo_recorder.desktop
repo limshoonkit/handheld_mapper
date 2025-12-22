@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Handheld Mapping with RViz
+Name=Record FAST-LIVO2
 Comment=Launch handheld mapping system with RViz visualization
-Exec=gnome-terminal -- /home/nvidia/handheld_mapper/scripts/handheld_mapping_with_rviz.sh
+Exec=gnome-terminal -- /home/nvidia/handheld_mapper/scripts/handheld_mapping_record_rosbag.sh
 Terminal=true
 Icon=utilities-terminal
 Categories=Utility;Development;
