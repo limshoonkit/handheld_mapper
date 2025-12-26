@@ -80,14 +80,14 @@ Visualization Manager:
       Max Value: 1
       Median window: 5
       Min Value: 0
-      Name: hik_image
+      Name: hik_cam_image
       Normalize Range: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /hik_camera/image
+        Value: /left_camera/image
       Value: true
     - Class: rviz_default_plugins/Image
       Enabled: true
@@ -197,7 +197,7 @@ Window Geometry:
   Width: 1850
   X: 70
   Y: 27
-  hik_image:
+  hik_cam_image:
     collapsed: false
   zed_left:
     collapsed: false

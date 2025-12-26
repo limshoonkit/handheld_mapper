@@ -4,7 +4,7 @@ Custom Rig for https://github.com/hku-mars/LIV_handhold_2, support ROS2 Humble.
 
 FAST-LIVO2 is based on [https://github.com/yqmy0814/FAST-LIVO2] and [https://github.com/hku-mars/FAST-LIVO2/issues/128]
 
-**Note :-**
+**Note:-**
 
 1. **livox_ros_driver2** is custom, not the official version from Livox. It reads and writes from a time-share file located in `home/${User}/timeshare` for synchronization. Ensure to set a static IP of `192.168.1.50` for the device connected to the Livox LiDAR. 
 2. The **FAST-LIVO2 voxelmap** is unbounded, which means memory usage will grow indefinitely. This could potentially lead to issues such as a forced shutdown when mapping for extended periods on systems with limited memory, like the Jetson Orin (16GB RAM). 
@@ -69,6 +69,9 @@ ros2 launch handheld_bringup handheld_sensors.launch.py
 ![Display](./media/display.jpeg)
 
 ## Run Fast-Livo2
+**Note :-**
+
+Comment out driver nodes and set preprocess.lidar_type to `3` for bags using standard pointcloud2 msg rather than livox custom msg.
 ```
 source ./install/setup.bash
 ros2 launch handheld_bringup fast_livo2.launch.py
@@ -83,3 +86,11 @@ ros2 launch handheld_bringup fast_livo2.launch.py
 ![Sample0](./media/sample0.jpeg)
 ![Sample1](./media/sample1.jpeg)
 ![Sample2](./media/sample2.jpeg)
+
+## Replay from ZED SVO and re-record to ros2 bag
+```
+source ./install/setup.bash
+ros2 launch handheld_bringup zed_svo_replay.launch.py \
+    svo_file_path:=/home/ubuntu/Desktop/dataset/uosm_library/svo_20251225_143259/zed_recording.svo2 \
+    bag_output_path:=/home/ubuntu/Desktop/dataset/uosm_library/zed_ros_output
+```
