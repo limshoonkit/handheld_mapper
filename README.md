@@ -62,6 +62,9 @@ colcon build --packages-select handheld_bringup --symlink-install # eg handheld_
 ```
 
 ## Run Calibration Recording
+
+1. Get [FastCalib](https://github.com/ichangjian/FAST-Calib-ROS2)
+2. Get [kalibr](https://github.com/ethz-asl/kalibr), use the docker
 ```
 source ./install/setup.bash
 ros2 launch handheld_bringup handheld_sensors.launch.py
