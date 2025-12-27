@@ -42,7 +42,7 @@ def generate_launch_description():
     zed_wrapper_package = get_package_share_directory('zed_wrapper')
     zed_config_common = os.path.join(bringup_package, 'config', 'zed_config', 'common_stereo.yaml')
     zed_config_camera = os.path.join(bringup_package, 'config', 'zed_config', 'zed2i.yaml')
-    mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options.yaml')
+    mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options_compression.yaml')
     rviz_config_path = os.path.join(bringup_package, 'config', 'rviz', 'zed_view_svo.rviz')
     xacro_path = os.path.join(zed_wrapper_package, 'urdf', 'zed_descr.urdf.xacro')
 
@@ -63,14 +63,14 @@ def generate_launch_description():
                 'general.camera_model': 'zed2i',
                 'svo.svo_path': svo_file_path,
                 'sensors.sensors_pub_rate': 200.,
-                'depth.depth_mode': 'NEURAL_PLUS',  # PERFORMANCE, NEURAL, NEURAL_PLUS, ULTRA
-                'pos_tracking.pos_tracking_enabled': True,
-                'pos_tracking.pos_tracking_mode': 'GEN_3', # GEN_1, GEN_2, GEN_3
-                'pos_tracking.publish_tf': True,
-                'pos_tracking.publish_map_tf': True,
-                'pos_tracking.publish_cam_path': True,
-                'pos_tracking.reset_odom_with_loop_closure': True,
-                'mapping.mapping_enabled': True,
+                # 'depth.depth_mode': 'NEURAL_PLUS',  # PERFORMANCE, NEURAL, NEURAL_PLUS, ULTRA
+                # 'pos_tracking.pos_tracking_enabled': True,
+                # 'pos_tracking.pos_tracking_mode': 'GEN_3', # GEN_1, GEN_2, GEN_3
+                # 'pos_tracking.publish_tf': True,
+                # 'pos_tracking.publish_map_tf': True,
+                # 'pos_tracking.publish_cam_path': True,
+                # 'pos_tracking.reset_odom_with_loop_closure': True,
+                # 'mapping.mapping_enabled': False,
             }
         ],
         extra_arguments=[{'use_intra_process_comms': True}]
@@ -88,11 +88,12 @@ def generate_launch_description():
         ]
     )
 
-    # ROS2 bag recording - ZED topics
+    # ROS2 bag recording
     rosbag_record = ExecuteProcess(
         condition=IfCondition(LaunchConfiguration('record_bag')),
         cmd=[
             'ros2', 'bag', 'record',
+            '--use-sim-time',
             '--storage', 'mcap',
             '--storage-config-file', mcap_writer_options,
             '-o', bag_output_path,
@@ -101,19 +102,17 @@ def generate_launch_description():
             'zed_node/left/color/rect/camera_info',
             'zed_node/right/color/rect/camera_info',
             'zed_node/imu/data',
-            'zed_node/point_cloud/cloud_registered',
-            'zed_node/odom',
         ],
         output='screen',
     )
 
-    rviz_node = Node(
-        condition=IfCondition(LaunchConfiguration('use_rviz')),
-        package='rviz2',
-        executable='rviz2',
-        output='screen',
-        arguments=['--display-config', rviz_config_path],
-    )
+    # rviz_node = Node(
+    #     condition=IfCondition(LaunchConfiguration('use_rviz')),
+    #     package='rviz2',
+    #     executable='rviz2',
+    #     output='screen',
+    #     arguments=['--display-config', rviz_config_path],
+    # )
 
     # Robot State Publisher - publishes the ZED URDF and static transforms
     robot_state_publisher = Node(
@@ -140,6 +139,6 @@ def generate_launch_description():
         # Nodes
         robot_state_publisher,
         zed_module_container,
-        rviz_node,
+        # rviz_node,
         rosbag_record,
     ])

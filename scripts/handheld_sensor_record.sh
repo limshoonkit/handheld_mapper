@@ -42,9 +42,10 @@ if [[ "$LAUNCH_FILE" == "handheld_compressed_svo.launch.py" ]]; then
             echo "Service available, starting SVO recording to: ${SVO_OUTPUT_PATH}"
             sleep 1
 
-            # Start SVO recording with compression mode 2 (H.265)
+            # Start SVO recording with compression mode 4 (H.265 Lossless)
+            # https://www.stereolabs.com/docs/ros2/record_and_replay_data_with_ros_wrapper
             ros2 service call /zed_node/start_svo_rec zed_msgs/srv/StartSvoRec \
-                "{svo_filename: '${SVO_OUTPUT_PATH}', compression_mode: 2}"
+                "{svo_filename: '${SVO_OUTPUT_PATH}', compression_mode: 4}"
 
             if [ $? -eq 0 ]; then
                 echo "SVO recording started successfully!"

@@ -88,9 +88,14 @@ ros2 launch handheld_bringup fast_livo2.launch.py
 ![Sample2](./media/sample2.jpeg)
 
 ## Replay from ZED SVO and re-record to ros2 bag
+Based on https://github.com/stereolabs/ros2_replay_data/blob/main/README.md
 ```
 source ./install/setup.bash
 ros2 launch handheld_bringup zed_svo_replay.launch.py \
-    svo_file_path:=/home/ubuntu/Desktop/dataset/uosm_library/svo_20251225_143259/zed_recording.svo2 \
-    bag_output_path:=/home/ubuntu/Desktop/dataset/uosm_library/zed_ros_output
+    svo_file_path:=/home/ubuntu/Desktop/dataset/uosm_ground_floor-day/svo_20251226_065654/zed_recording.svo2 \
+    bag_output_path:=/home/ubuntu/Desktop/dataset/uosm_ground_floor-day/zed_ros_output
+```
+
+```
+ros2 bag convert -i /home/ubuntu/Desktop/dataset/uosm_library-night/zed_ros_output -i /home/ubuntu/Desktop/dataset/uosm_library-night/rosbag_20251225_143259 -o /home/ubuntu/Desktop/dataset/uosm_library-night/out.yaml
 ```
