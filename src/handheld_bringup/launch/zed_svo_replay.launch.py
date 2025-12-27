@@ -101,7 +101,6 @@ def generate_launch_description():
             'zed_node/right/color/rect/image',
             'zed_node/left/color/rect/camera_info',
             'zed_node/right/color/rect/camera_info',
-            'zed_node/imu/data',
         ],
         output='screen',
     )
@@ -137,7 +136,7 @@ def generate_launch_description():
         use_rviz_arg,
 
         # Nodes
-        robot_state_publisher,
+        # robot_state_publisher,
         zed_module_container,
         # rviz_node,
         rosbag_record,

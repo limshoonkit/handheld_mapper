@@ -18,10 +18,10 @@ def generate_launch_description():
         description='Output directory for ROS2 bag files'
     )
 
-    use_rviz_arg = DeclareLaunchArgument(
-        'use_rviz',
+    use_image_view_arg = DeclareLaunchArgument(
+        'use_image_view',
         default_value='true',
-        description='Launch RViz2'
+        description='Launch rqt_image_view'
     )
 
     # Configuration paths
@@ -31,7 +31,6 @@ def generate_launch_description():
     mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options_compression.yaml')
     livox_config = os.path.join(bringup_package, 'config', 'MID360_config.json')
     hik_camera_config = os.path.join(bringup_package, 'config', 'hik_camera.yaml')
-    rviz_config_path = os.path.join(bringup_package, 'config', 'rviz', 'handheld_sensors.rviz')
 
     # Zed camera component
     zed_component = ComposableNode(
@@ -89,7 +88,7 @@ def generate_launch_description():
         }]
     )
 
-    # ROS2 bag recording (ZED topics excluded - using SVO format instead)
+    # ROS2 bag recording (ZED camera topics except IMU data excluded - using SVO format instead)
     rosbag_record = ExecuteProcess(
         cmd=[
             'ros2', 'bag', 'record',
@@ -100,6 +99,7 @@ def generate_launch_description():
             'livox/lidar',
             'livox/imu',
             'left_camera/image',
+            'zed_node/imu/data'
         ],
         output='screen',
     )
@@ -109,22 +109,22 @@ def generate_launch_description():
         actions=[rosbag_record]
     )
 
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
+    rqt_image_view_node = Node(
+        package='rqt_image_view',
+        executable='rqt_image_view',
         output='screen',
-        arguments=['--display-config', rviz_config_path]
+        arguments=['/left_camera/image']
     )
 
     return LaunchDescription([
         # Launch arguments
         bag_output_path_arg,
-        use_rviz_arg,
+        use_image_view_arg,
 
         # Nodes
         zed_module_container,
         livox_driver,
         mvs_driver,
-        rviz_node,
+        rqt_image_view_node,
         record_delay,
     ])
