@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
-from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 from ament_index_python.packages import get_package_share_directory
@@ -10,14 +9,7 @@ from ament_index_python.packages import get_package_share_directory
 # Enable colored output
 os.environ["RCUTILS_COLORIZED_OUTPUT"] = "1"
 
-def generate_launch_description():    
-    bag_output_path = LaunchConfiguration('bag_output_path')
-    bag_output_path_arg = DeclareLaunchArgument(
-        'bag_output_path',
-        default_value='/home/nvidia/Desktop/data/calib_bag',
-        description='Output directory for ROS2 bag files'
-    )
-
+def generate_launch_description():
     use_image_view_arg = DeclareLaunchArgument(
         'use_image_view',
         default_value='true',
@@ -28,7 +20,6 @@ def generate_launch_description():
     bringup_package = get_package_share_directory('handheld_bringup')
     zed_config_common = os.path.join(bringup_package, 'config', 'zed_config', 'common_stereo.yaml')
     zed_config_camera = os.path.join(bringup_package, 'config', 'zed_config', 'zed2i.yaml')
-    mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options_compression.yaml')
     livox_config = os.path.join(bringup_package, 'config', 'MID360_config.json')
     hik_camera_config = os.path.join(bringup_package, 'config', 'hik_camera.yaml')
 
@@ -88,26 +79,9 @@ def generate_launch_description():
         }]
     )
 
-    # ROS2 bag recording (ZED camera topics except IMU data excluded - using SVO format instead)
-    rosbag_record = ExecuteProcess(
-        cmd=[
-            'ros2', 'bag', 'record',
-            '--storage', 'mcap',
-            '--storage-config-file', mcap_writer_options,
-            '-o', bag_output_path,
-            '--max-cache-size', '100000000',  # 100MB cache limit
-            'livox/lidar',
-            'livox/imu',
-            'left_camera/image',
-            'zed_node/imu/data'
-        ],
-        output='screen',
-    )
-
-    record_delay = TimerAction(
-        period=3.0,
-        actions=[rosbag_record]
-    )
+    # NOTE: ROS2 bag recording is now triggered externally by the shell script
+    # to ensure it starts at exactly the same time as SVO recording.
+    # See handheld_svo_record.sh for the rosbag start command.
 
     rqt_image_view_node = Node(
         package='rqt_image_view',
@@ -118,7 +92,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         # Launch arguments
-        bag_output_path_arg,
         use_image_view_arg,
 
         # Nodes
@@ -126,5 +99,4 @@ def generate_launch_description():
         livox_driver,
         mvs_driver,
         rqt_image_view_node,
-        record_delay,
     ])

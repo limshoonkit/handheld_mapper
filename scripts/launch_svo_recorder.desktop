@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Launch SVO Recorder
+Exec=gnome-terminal -- /home/nvidia/handheld_mapper/scripts/handheld_svo_record.sh
+Terminal=true
+Icon=utilities-terminal
+Categories=Utility;

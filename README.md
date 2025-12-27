@@ -87,15 +87,19 @@ ros2 launch handheld_bringup fast_livo2.launch.py
 ![Sample1](./media/sample1.jpeg)
 ![Sample2](./media/sample2.jpeg)
 
-## Replay from ZED SVO and re-record to ros2 bag
+## Replay from ZED SVO
 Based on https://github.com/stereolabs/ros2_replay_data/blob/main/README.md
 ```
 source ./install/setup.bash
 ros2 launch handheld_bringup zed_svo_replay.launch.py \
-    svo_file_path:=/home/nvidia/Desktop/data/svo_20251227_055134/zed_recording.svo2 \
+    svo_file_path:=/home/nvidia/Desktop/data/svo/zed_recording.svo2 \
     bag_output_path:=/home/nvidia/Desktop/data/zed_ros_output
 ```
 
+Get mcap-cli from https://github.com/foxglove/mcap/releases?q=mcap-cli and use mcap filter to match start and end timing of rosbag
 ```
-ros2 bag convert -i /home/ubuntu/Desktop/dataset/uosm_library-night/zed_ros_output -i /home/ubuntu/Desktop/dataset/uosm_library-night/rosbag_20251225_143259 -o /home/ubuntu/Desktop/dataset/uosm_library-night/out.yaml
+mcap filter rosbag_20251227_075258_0.mcap \
+  --start 1766821986886082602 \
+  --end 1766822024386007309 \
+  -o rosbag_trimmed.mcap
 ```
