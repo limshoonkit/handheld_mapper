@@ -49,6 +49,9 @@ rosdep install --from-paths src/livox_ros_driver2 --ignore-src -r -y
 rosdep install --from-paths src/mvs_ros_driver2 --ignore-src -r -y
 rosdep install --from-paths src/FAST-LIVO2 --ignore-src -r -y
 rosdep install --from-paths src/ros2_jetson_stats --ignore-src --rosdistro humble -y
+
+# Install SC-PGO dependencies (GTSAM for pose graph optimization)
+sudo apt install ros-humble-gtsam
 ```
 
 ### Erase all and rebuild
@@ -89,6 +92,40 @@ ros2 launch handheld_bringup fast_livo2.launch.py
 ![Sample0](./media/sample0.jpeg)
 ![Sample1](./media/sample1.jpeg)
 ![Sample2](./media/sample2.jpeg)
+
+## Replay Bag with FAST-LIVO2 + SC-PGO (Loop Closure & Global Optimization)
+This launch file runs FAST-LIVO2 for local odometry and SC-PGO for loop closure detection and pose graph optimization. No sensor drivers are included - designed for bag replay.
+
+- FAST-LIVO2: LiDAR-Visual-Inertial Odometry (local mapping)
+- SC-PGO: Scan Context loop closure + GTSAM pose graph optimization (global consistency)
+
+```bash
+source ./install/setup.bash
+
+# Play bag file
+ros2 bag play your_bag_file.mcap
+
+# Launch FAST-LIVO2 + SC-PGO
+ros2 launch handheld_bringup replay_with_pgo.launch.py
+```
+
+**Output files are saved to** `./tmp/sc_pgo/`:
+- `optimized_poses_tum.txt` - Optimized poses after loop closure (TUM format: timestamp tx ty tz qx qy qz qw)
+- `odom_poses_tum.txt` - Original odometry poses before optimization (TUM format)
+- `optimized_poses_kitti.txt` - Optimized poses (KITTI format: 3x4 transformation matrix)
+- `odom_poses_kitti.txt` - Original odometry poses (KITTI format)
+- `times.txt` - Timestamps for each keyframe
+- `Scans/*.pcd` - Individual keyframe point clouds
+
+**TUM format** is compatible with trajectory evaluation tools like `evo`:
+```bash
+# Evaluate trajectory with evo
+evo_ape tum ground_truth.txt ./tmp/sc_pgo/optimized_poses_tum.txt -a --plot --plot_mode xyz
+```
+
+**Important Topics:**
+- Subscribes: `/cloud_registered`, `/Odometry` (from FAST-LIVO2)
+- Publishes: `/aft_pgo_odom`, `/aft_pgo_path`, `/aft_pgo_map` (optimized results)
 
 ## Replay from ZED SVO
 Based on https://github.com/stereolabs/ros2_replay_data/blob/main/README.md

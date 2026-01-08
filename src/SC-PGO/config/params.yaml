@@ -1,0 +1,18 @@
+/**:
+  ros__parameters:
+    # Save directory for results
+    save_directory: "./tmp/sc_pgo/"
+
+    # Keyframe selection parameters
+    keyframe_meter_gap: 2.0  # meters between keyframes (smaller for indoor to capture more detail)
+    keyframe_deg_gap: 10.0   # degrees rotation between keyframes
+
+    # Scan Context parameters
+    sc_dist_thres: 0.15       # distance threshold for loop detection (higher = stricter for repetitive hallways)
+    sc_max_radius: 10.0      # maximum radius for scan context (smaller for indoor hallways to reduce repetitive patterns)
+
+    # Visualization parameters
+    mapviz_filter_size: 0.3  # voxel grid filter size for map visualization
+
+    # GPS usage (set to true if using GPS)
+    use_gps: false
