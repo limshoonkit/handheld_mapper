@@ -20,4 +20,10 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
+# Install Python scripts
+install(PROGRAMS
+  scripts/camera_info_publisher.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()

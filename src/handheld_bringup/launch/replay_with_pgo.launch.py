@@ -105,6 +105,19 @@ def generate_launch_description():
         ]
     )
 
+    # Camera info publisher node
+    camera_info_node = Node(
+        package='handheld_bringup',
+        executable='camera_info_publisher.py',
+        name='camera_info_publisher',
+        output='screen',
+        parameters=[{
+            'calibration_file': camera_params_file,
+            'frame_id': 'left_camera_optical_frame',
+            'use_sim_time': use_sim_time
+        }]
+    )
+
     # Foxglove bridge node
     foxglove_bridge_node = Node(
         package='foxglove_bridge',
@@ -118,6 +131,31 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Static TF: camera_init -> livox_frame
+    # This is the base lidar frame used by FAST-LIVO2
+    static_tf_camera_init_to_livox = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera_init_to_livox_frame',
+        arguments=['0', '0', '0', '0', '0', '0', 'camera_init', 'livox_frame'],
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    # Static TF: livox_frame -> left_camera_optical_frame
+    # From mid360.yaml extrinsic calibration: Pcl and Rcl (Camera to Lidar)
+    # Inverted to get Lidar to Camera transformation
+    static_tf_livox_to_camera = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='livox_frame_to_left_camera',
+        arguments=[
+            '0.030592', '0.009768', '-0.124693',  # x, y, z (translation)
+            '0.396385', '-0.398932', '0.586410', '-0.582971',  # qx, qy, qz, qw (rotation)
+            'livox_frame', 'left_camera_optical_frame'
+        ],
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
     return LaunchDescription([
         # Launch arguments
         use_rviz_arg,
@@ -127,8 +165,13 @@ def generate_launch_description():
         sc_pgo_config_arg,
         use_foxglove_arg,
 
+        # Static TF transforms
+        static_tf_camera_init_to_livox,
+        static_tf_livox_to_camera,
+
         # Nodes
         fast_livo_node,
         sc_pgo_node,
+        camera_info_node,
         foxglove_bridge_node,
     ])

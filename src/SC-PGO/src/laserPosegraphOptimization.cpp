@@ -72,12 +72,15 @@ using std::endl;
 class SCPGONode : public rclcpp::Node
 {
 private:
-    // Parameters
-    double keyframeMeterGap_;
-    double keyframeDegGap_, keyframeRadGap_;
-    double translationAccumulated_ = 1000000.0;
-    double rotaionAccumulated_ = 1000000.0;
-    bool isNowKeyFrame_ = false;
+    // Submap accumulation parameters
+    double submapDistanceThreshold_;
+    int submapScanThreshold_;
+    double submapAccumulatedDistance_ = 0.0;
+    int submapScanCount_ = 0;
+    Pose6D submapStartPose_ {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    std::vector<pcl::PointCloud<PointType>::Ptr> submapScanBuffer_;
+    std::vector<Pose6D> submapPoseBuffer_;
+    bool submapInitialized_ = false;
 
     Pose6D odom_pose_prev_ {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     Pose6D odom_pose_curr_ {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -160,8 +163,7 @@ private:
 
     // Save directories
     std::string save_directory_;
-    std::string pgKITTIformat_, pgScansDirectory_;
-    std::string odomKITTIformat_;
+    std::string pgScansDirectory_;
     std::string pgTUMformat_, odomTUMformat_;
     std::fstream pgTimeSaveStream_;
 
@@ -175,8 +177,8 @@ public:
 
         // Declare parameters
         this->declare_parameter<std::string>("save_directory", "/tmp/sc_pgo/");
-        this->declare_parameter<double>("keyframe_meter_gap", 2.0);
-        this->declare_parameter<double>("keyframe_deg_gap", 10.0);
+        this->declare_parameter<double>("submap_distance_threshold", 5.0);
+        this->declare_parameter<int>("submap_scan_threshold", 10);
         this->declare_parameter<double>("sc_dist_thres", 0.2);
         this->declare_parameter<double>("sc_max_radius", 80.0);
         this->declare_parameter<double>("mapviz_filter_size", 0.4);
@@ -184,17 +186,16 @@ public:
 
         // Get parameters
         this->get_parameter("save_directory", save_directory_);
-        this->get_parameter("keyframe_meter_gap", keyframeMeterGap_);
-        this->get_parameter("keyframe_deg_gap", keyframeDegGap_);
+        this->get_parameter("submap_distance_threshold", submapDistanceThreshold_);
+        this->get_parameter("submap_scan_threshold", submapScanThreshold_);
         this->get_parameter("sc_dist_thres", scDistThres_);
         this->get_parameter("sc_max_radius", scMaximumRadius_);
         this->get_parameter("use_gps", useGPS_);
 
-        keyframeRadGap_ = deg2rad(keyframeDegGap_);
+        RCLCPP_INFO(this->get_logger(), "Submap accumulation: distance threshold = %.2f m, scan threshold = %d scans",
+                    submapDistanceThreshold_, submapScanThreshold_);
 
         // Setup save directories
-        pgKITTIformat_ = save_directory_ + "optimized_poses_kitti.txt";
-        odomKITTIformat_ = save_directory_ + "odom_poses_kitti.txt";
         pgTUMformat_ = save_directory_ + "optimized_poses_tum.txt";
         odomTUMformat_ = save_directory_ + "odom_poses_tum.txt";
         pgTimeSaveStream_ = std::fstream(save_directory_ + "times.txt", std::fstream::out);
@@ -285,22 +286,6 @@ private:
         return gtsam::Pose3(gtsam::Rot3::RzRyRx(p.roll, p.pitch, p.yaw), gtsam::Point3(p.x, p.y, p.z));
     }
 
-    void saveOdometryVerticesKITTIformat(std::string _filename) {
-        std::fstream stream(_filename.c_str(), std::fstream::out);
-        for(const auto& _pose6d: keyframePoses_) {
-            gtsam::Pose3 pose = Pose6DtoGTSAMPose3(_pose6d);
-            Point3 t = pose.translation();
-            Rot3 R = pose.rotation();
-            auto col1 = R.column(1);
-            auto col2 = R.column(2);
-            auto col3 = R.column(3);
-
-            stream << col1.x() << " " << col2.x() << " " << col3.x() << " " << t.x() << " "
-                   << col1.y() << " " << col2.y() << " " << col3.y() << " " << t.y() << " "
-                   << col1.z() << " " << col2.z() << " " << col3.z() << " " << t.z() << std::endl;
-        }
-    }
-
     void saveOdometryVerticesTUMformat(std::string _filename) {
         std::fstream stream(_filename.c_str(), std::fstream::out);
         stream.precision(std::numeric_limits<double>::max_digits10);
@@ -316,27 +301,6 @@ private:
             stream << timestamp << " "
                    << t.x() << " " << t.y() << " " << t.z() << " "
                    << quat.x() << " " << quat.y() << " " << quat.z() << " " << quat.w() << std::endl;
-        }
-    }
-
-    void saveOptimizedVerticesKITTIformat(gtsam::Values _estimates, std::string _filename) {
-        std::fstream stream(_filename.c_str(), std::fstream::out);
-
-        for(const auto& key_value: _estimates) {
-            auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
-            if (!p) continue;
-
-            const Pose3& pose = p->value();
-
-            Point3 t = pose.translation();
-            Rot3 R = pose.rotation();
-            auto col1 = R.column(1);
-            auto col2 = R.column(2);
-            auto col3 = R.column(3);
-
-            stream << col1.x() << " " << col2.x() << " " << col3.x() << " " << t.x() << " "
-                   << col1.y() << " " << col2.y() << " " << col3.y() << " " << t.y() << " "
-                   << col1.z() << " " << col2.z() << " " << col3.z() << " " << t.z() << std::endl;
         }
     }
 
@@ -434,6 +398,50 @@ private:
         pcl::getTranslationAndEulerAngles(SE3_delta, dx, dy, dz, droll, dpitch, dyaw);
 
         return Pose6D{double(abs(dx)), double(abs(dy)), double(abs(dz)), double(abs(droll)), double(abs(dpitch)), double(abs(dyaw))};
+    }
+
+    pcl::PointCloud<PointType>::Ptr accumulateSubmap() {
+        pcl::PointCloud<PointType>::Ptr submapAccumulated(new pcl::PointCloud<PointType>());
+
+        // Use the first pose in the buffer as reference frame
+        if (submapPoseBuffer_.empty()) {
+            return submapAccumulated;
+        }
+
+        Pose6D referencePose = submapPoseBuffer_[0];
+
+        // Transform all scans to the reference frame and accumulate
+        for (size_t i = 0; i < submapScanBuffer_.size(); i++) {
+            pcl::PointCloud<PointType>::Ptr transformedCloud = local2global(submapScanBuffer_[i], submapPoseBuffer_[i]);
+
+            // Transform to reference frame
+            Eigen::Affine3f refTransform = pcl::getTransformation(referencePose.x, referencePose.y, referencePose.z,
+                                                                   referencePose.roll, referencePose.pitch, referencePose.yaw);
+            Eigen::Affine3f refTransformInv = refTransform.inverse();
+
+            pcl::PointCloud<PointType>::Ptr cloudInRef(new pcl::PointCloud<PointType>());
+            pcl::transformPointCloud(*transformedCloud, *cloudInRef, refTransformInv);
+
+            *submapAccumulated += *cloudInRef;
+        }
+
+        // Downsample the accumulated submap
+        pcl::PointCloud<PointType>::Ptr submapDS(new pcl::PointCloud<PointType>());
+        downSizeFilterScancontext_.setInputCloud(submapAccumulated);
+        downSizeFilterScancontext_.filter(*submapDS);
+
+        RCLCPP_INFO(this->get_logger(), "Accumulated submap: %d scans, %.2f meters, %zu points -> %zu points after downsampling",
+                    submapScanCount_, submapAccumulatedDistance_, submapAccumulated->points.size(), submapDS->points.size());
+
+        return submapDS;
+    }
+
+    void resetSubmapBuffer() {
+        submapScanBuffer_.clear();
+        submapPoseBuffer_.clear();
+        submapAccumulatedDistance_ = 0.0;
+        submapScanCount_ = 0;
+        submapInitialized_ = false;
     }
 
     pcl::PointCloud<PointType>::Ptr local2global(const pcl::PointCloud<PointType>::Ptr &cloudIn, const Pose6D& tf) {
@@ -676,22 +684,38 @@ private:
 
                 odom_pose_prev_ = odom_pose_curr_;
                 odom_pose_curr_ = pose_curr;
-                Pose6D dtf = diffTransformation(odom_pose_prev_, odom_pose_curr_);
 
-                double delta_translation = sqrt(dtf.x*dtf.x + dtf.y*dtf.y + dtf.z*dtf.z);
-                translationAccumulated_ += delta_translation;
-                rotaionAccumulated_ += (dtf.roll + dtf.pitch + dtf.yaw);
-
-                if(translationAccumulated_ > keyframeMeterGap_ || rotaionAccumulated_ > keyframeRadGap_) {
-                    isNowKeyFrame_ = true;
-                    translationAccumulated_ = 0.0;
-                    rotaionAccumulated_ = 0.0;
-                } else {
-                    isNowKeyFrame_ = false;
+                // Initialize submap buffer on first scan
+                if (!submapInitialized_) {
+                    submapStartPose_ = pose_curr;
+                    submapInitialized_ = true;
                 }
 
-                if(!isNowKeyFrame_)
+                // Add current scan to submap buffer
+                submapScanBuffer_.push_back(thisKeyFrame);
+                submapPoseBuffer_.push_back(pose_curr);
+                submapScanCount_++;
+
+                // Calculate distance from submap start
+                Pose6D dtf_from_start = diffTransformation(submapStartPose_, pose_curr);
+                double distance_from_start = sqrt(dtf_from_start.x*dtf_from_start.x +
+                                                   dtf_from_start.y*dtf_from_start.y +
+                                                   dtf_from_start.z*dtf_from_start.z);
+                submapAccumulatedDistance_ = distance_from_start;
+
+                // Check if we should create a keyframe (either threshold crossed)
+                bool shouldCreateKeyframe = (submapAccumulatedDistance_ >= submapDistanceThreshold_) ||
+                                           (submapScanCount_ >= submapScanThreshold_);
+
+                if (!shouldCreateKeyframe)
                     continue;
+
+                // Accumulate submap from buffer
+                pcl::PointCloud<PointType>::Ptr thisKeyFrameDS = accumulateSubmap();
+
+                // Use the first pose of the submap as the keyframe pose
+                Pose6D keyframePose = submapPoseBuffer_[0];
+                double keyframeTime = timeLaserOdometry_;
 
                 if(!gpsOffsetInitialized_) {
                     if(hasGPSforThisKF_) {
@@ -700,20 +724,21 @@ private:
                     }
                 }
 
-                pcl::PointCloud<PointType>::Ptr thisKeyFrameDS(new pcl::PointCloud<PointType>());
-                downSizeFilterScancontext_.setInputCloud(thisKeyFrame);
-                downSizeFilterScancontext_.filter(*thisKeyFrameDS);
-
                 mKF_.lock();
                 keyframeLaserClouds_.push_back(thisKeyFrameDS);
-                keyframePoses_.push_back(pose_curr);
-                keyframePosesUpdated_.push_back(pose_curr);
-                keyframeTimes_.push_back(timeLaserOdometry_);
+                keyframePoses_.push_back(keyframePose);
+                keyframePosesUpdated_.push_back(keyframePose);
+                keyframeTimes_.push_back(keyframeTime);
 
                 scManager_.makeAndSaveScancontextAndKeys(*thisKeyFrameDS);
 
                 laserCloudMapPGORedraw_ = true;
                 mKF_.unlock();
+
+                // Reset submap buffer for next accumulation
+                resetSubmapBuffer();
+                submapStartPose_ = pose_curr;
+                submapInitialized_ = true;
 
                 const int prev_node_idx = keyframePoses_.size() - 2;
                 const int curr_node_idx = keyframePoses_.size() - 1;
@@ -756,8 +781,8 @@ private:
                 }
 
                 std::string curr_node_idx_str = padZeros(curr_node_idx);
-                pcl::io::savePCDFileBinary(pgScansDirectory_ + curr_node_idx_str + ".pcd", *thisKeyFrame);
-                pgTimeSaveStream_ << timeLaser_ << std::endl;
+                pcl::io::savePCDFileBinary(pgScansDirectory_ + curr_node_idx_str + ".pcd", *thisKeyFrameDS);
+                pgTimeSaveStream_ << keyframeTime << std::endl;
             }
 
             std::chrono::milliseconds dura(2);
@@ -844,8 +869,6 @@ private:
                 RCLCPP_INFO(this->get_logger(), "running isam2 optimization ...");
                 mtxPosegraph_.unlock();
 
-                saveOptimizedVerticesKITTIformat(isamCurrentEstimate_, pgKITTIformat_);
-                saveOdometryVerticesKITTIformat(odomKITTIformat_);
                 saveOptimizedVerticesTUMformat(isamCurrentEstimate_, pgTUMformat_);
                 saveOdometryVerticesTUMformat(odomTUMformat_);
             }
