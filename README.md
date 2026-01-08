@@ -96,6 +96,8 @@ ros2 launch handheld_bringup fast_livo2.launch.py
 ## Replay Bag with FAST-LIVO2 + SC-PGO (Loop Closure & Global Optimization)
 This launch file runs FAST-LIVO2 for local odometry and SC-PGO for loop closure detection and pose graph optimization. No sensor drivers are included - designed for bag replay.
 
+```NOTE: not working well!!!```
+
 - FAST-LIVO2: LiDAR-Visual-Inertial Odometry (local mapping)
 - SC-PGO: Scan Context loop closure + GTSAM pose graph optimization (global consistency)
 
@@ -124,7 +126,7 @@ evo_ape tum ground_truth.txt ./tmp/sc_pgo/optimized_poses_tum.txt -a --plot --pl
 ```
 
 **Important Topics:**
-- Subscribes: `/cloud_registered`, `/Odometry` (from FAST-LIVO2)
+- Subscribes: `/sc_pgo_cloud_registered`, `/sc_pgo_odometry` (from FAST-LIVO2)
 - Publishes: `/aft_pgo_odom`, `/aft_pgo_path`, `/aft_pgo_map` (optimized results)
 
 ## Replay from ZED SVO
