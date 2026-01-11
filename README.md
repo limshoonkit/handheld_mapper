@@ -107,28 +107,6 @@ source ./install/setup.bash
 # Play bag file
 ros2 bag play your_bag_file.mcap
 
-# Launch FAST-LIVO2 + SC-PGO
-ros2 launch handheld_bringup replay_with_pgo.launch.py
-```
-
-**Output files are saved to** `./tmp/sc_pgo/`:
-- `optimized_poses_tum.txt` - Optimized poses after loop closure (TUM format: timestamp tx ty tz qx qy qz qw)
-- `odom_poses_tum.txt` - Original odometry poses before optimization (TUM format)
-- `optimized_poses_kitti.txt` - Optimized poses (KITTI format: 3x4 transformation matrix)
-- `odom_poses_kitti.txt` - Original odometry poses (KITTI format)
-- `times.txt` - Timestamps for each keyframe
-- `Scans/*.pcd` - Individual keyframe point clouds
-
-**TUM format** is compatible with trajectory evaluation tools like `evo`:
-```bash
-# Evaluate trajectory with evo
-evo_ape tum ground_truth.txt ./tmp/sc_pgo/optimized_poses_tum.txt -a --plot --plot_mode xyz
-```
-
-**Important Topics:**
-- Subscribes: `/sc_pgo_cloud_registered`, `/sc_pgo_odometry` (from FAST-LIVO2)
-- Publishes: `/aft_pgo_odom`, `/aft_pgo_path`, `/aft_pgo_map` (optimized results)
-
 ## Replay from ZED SVO
 Based on https://github.com/stereolabs/ros2_replay_data/blob/main/README.md
 ```
