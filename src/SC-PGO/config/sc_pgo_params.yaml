@@ -1,0 +1,18 @@
+/**:
+  ros__parameters:
+    # Save directory for scans and poses
+    save_directory: "./data/sc_pgo/"
+
+    # Keyframe selection parameters
+    keyframe_meter_gap: 1.0      # Meters between keyframes
+    keyframe_deg_gap: 10.0       # Degrees rotation between keyframes
+
+    # Scan Context parameters
+    sc_dist_thres: 0.35          # Scan context distance threshold for loop detection
+    sc_max_radius: 40.0          # Maximum radius for scan context
+
+    # Visualization parameters
+    mapviz_filter_size: 0.4      # Voxel filter size for map visualization
+
+    # Trajectory export
+    save_trajectory: true        # Save optimized trajectory in TUM and KITTI formats

@@ -21,7 +21,7 @@ export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 sudo apt install ros-humble-rmw-cyclonedds-cpp ros-humble-rosbag2-storage-mcap
 ```
 
-## Hardware / Environment
+## A. Hardware / Environment
 - Nvidia Jetson Orin NX 16GB
 - Jetpack 6.2
 - Ubuntu 22.04
@@ -36,7 +36,7 @@ sudo apt install ros-humble-rmw-cyclonedds-cpp ros-humble-rosbag2-storage-mcap
 ![front](./media/front.jpeg)
 ![back](./media/back.jpeg)
 
-## Build 
+## B. Build 
 
 ### Get submodules and dependencies
 ```
@@ -64,7 +64,7 @@ sudo apt install ros-humble-gtsam
 colcon build --packages-select handheld_bringup --symlink-install # eg handheld_bringup
 ```
 
-## Run Calibration Recording
+## C. Run Calibration Recording
 
 1. Get [FastCalib](https://github.com/ichangjian/FAST-Calib-ROS2)
 2. Get [kalibr](https://github.com/ethz-asl/kalibr), use the docker
@@ -74,7 +74,7 @@ ros2 launch handheld_bringup handheld_sensors.launch.py
 ```
 ![Display](./media/display.jpeg)
 
-## Run Fast-Livo2
+## D. Run Fast-Livo2
 **Note :-**
 
 Comment out driver nodes and set preprocess.lidar_type to `3` for bags using standard pointcloud2 msg rather than livox custom msg.
@@ -93,21 +93,7 @@ ros2 launch handheld_bringup fast_livo2.launch.py
 ![Sample1](./media/sample1.jpeg)
 ![Sample2](./media/sample2.jpeg)
 
-## Replay Bag with FAST-LIVO2 + SC-PGO (Loop Closure & Global Optimization)
-This launch file runs FAST-LIVO2 for local odometry and SC-PGO for loop closure detection and pose graph optimization. No sensor drivers are included - designed for bag replay.
-
-```NOTE: not working well!!!```
-
-- FAST-LIVO2: LiDAR-Visual-Inertial Odometry (local mapping)
-- SC-PGO: Scan Context loop closure + GTSAM pose graph optimization (global consistency)
-
-```bash
-source ./install/setup.bash
-
-# Play bag file
-ros2 bag play your_bag_file.mcap
-
-## Replay from ZED SVO
+## E. Replay from ZED SVO
 Based on https://github.com/stereolabs/ros2_replay_data/blob/main/README.md
 ```
 source ./install/setup.bash
@@ -122,4 +108,15 @@ mcap filter rosbag_20251227_075258_0.mcap \
   --start 1766821986886082602 \
   --end 1766822024386007309 \
   -o rosbag_trimmed.mcap
+```
+
+## F. Offline Loop Closure
+
+```
+colcon build --packages-select sc_pgo --symlink-install # eg handheld_bringup
+```
+
+```
+source ./install/setup.bash
+ros2 launch handheld_bringup fast_livo2.launch.py use_sc_pgo:=True
 ```
