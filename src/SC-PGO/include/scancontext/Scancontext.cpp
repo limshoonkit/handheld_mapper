@@ -406,20 +406,12 @@ std::pair<int, float> SCManager::detectLoopClosureID ( void )
     if( min_dist < SC_DIST_THRES )
     {
         loop_id = nn_idx;
-
-        std::cout.precision(3);
-        cout << "[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
+        // std::cout.precision(3);
+        // cout << "[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
         // cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << endl;
     }
-    else
-    {
-        // Suppressed to reduce terminal spam when repeatedly finding same non-loop candidates
-        // std::cout.precision(3);
-        // cout << "[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << endl;
-        // cout << "[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << endl;
-    }
 
-    // To do: return also nn_align (i.e., yaw diff)
+    // TODO: return also nn_align (i.e., yaw diff)
     float yaw_diff_rad = deg2rad(nn_align * PC_UNIT_SECTORANGLE);
     std::pair<int, float> result {loop_id, yaw_diff_rad};
 

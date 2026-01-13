@@ -680,6 +680,7 @@ private:
                 return;  // Skip duplicate loop
             }
 
+            cout << "[Loop found] Between " << prev_node_idx << " and " << curr_node_idx << endl;
             cout << "Loop detected! - between " << prev_node_idx << " and " << curr_node_idx << endl;
             scLoopICPBuf.push(std::pair<int, int>(prev_node_idx, curr_node_idx));
             processedLoopPairs.insert(loopPair);  // Mark as processed
