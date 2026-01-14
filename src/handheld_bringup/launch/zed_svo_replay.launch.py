@@ -19,22 +19,16 @@ def generate_launch_description():
         description='Path to the .svo2 file to replay'
     )
 
-    bag_output_path_arg = DeclareLaunchArgument(
-        'bag_output_path',
-        default_value='/home/nvidia/Desktop/data/zed_replay_bag',
-        description='Output directory for ROS2 bag files'
-    )
-
-    record_bag_arg = DeclareLaunchArgument(
-        'record_bag',
-        default_value='True',
-        description='Whether to record ROS2 bag files'
-    )
-
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz',
         default_value='True',
         description='Launch RViz2'
+    )
+
+    tum_output_arg = DeclareLaunchArgument(
+        'tum_output',
+        default_value='./data/zed_trajectory_tum.txt',
+        description='Output TUM trajectory file (leave empty to disable)'
     )
 
     # Configuration paths
@@ -48,7 +42,6 @@ def generate_launch_description():
 
     # Launch configurations
     svo_file_path = LaunchConfiguration('svo_file_path')
-    bag_output_path = LaunchConfiguration('bag_output_path')
 
     # Zed camera component configured for SVO replay
     zed_component = ComposableNode(
@@ -67,9 +60,7 @@ def generate_launch_description():
                 'pos_tracking.pos_tracking_mode': 'GEN_3', # GEN_1, GEN_2, GEN_3
                 'pos_tracking.publish_tf': True,
                 'pos_tracking.publish_map_tf': True,
-                'pos_tracking.publish_cam_path': True,
-                'pos_tracking.reset_odom_with_loop_closure': True,
-                'mapping.mapping_enabled': True,
+                'pos_tracking.publish_cam_path': True
             }
         ],
         extra_arguments=[{'use_intra_process_comms': True}]
@@ -85,22 +76,6 @@ def generate_launch_description():
         composable_node_descriptions=[
             zed_component,
         ]
-    )
-
-    # ROS2 bag recording
-    rosbag_record = ExecuteProcess(
-        condition=IfCondition(LaunchConfiguration('record_bag')),
-        cmd=[
-            'ros2', 'bag', 'record',
-            '--use-sim-time',
-            '--storage', 'mcap',
-            '--storage-config-file', mcap_writer_options,
-            '-o', bag_output_path,
-            'zed_node/pose',
-            'zed_node/odom',
-            'zed_node/path'
-        ],
-        output='screen',
     )
 
     rviz_node = Node(
@@ -126,16 +101,24 @@ def generate_launch_description():
         }]
     )
 
+    # TUM trajectory converter node (always runs with default output)
+    tum_converter_node = Node(
+        package='handheld_bringup',
+        executable='zed_pose_to_tum.py',
+        name='zed_pose_to_tum',
+        output='screen',
+        arguments=['--output', LaunchConfiguration('tum_output'), '--topic', '/zed_node/pose']
+    )
+
     return LaunchDescription([
         # Launch arguments
         svo_file_path_arg,
-        bag_output_path_arg,
-        record_bag_arg,
         use_rviz_arg,
+        tum_output_arg,
 
         # Nodes
         robot_state_publisher,
         zed_module_container,
         rviz_node,
-        rosbag_record,
+        tum_converter_node,
     ])
