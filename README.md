@@ -50,8 +50,8 @@ rosdep install --from-paths src/mvs_ros_driver2 --ignore-src -r -y
 rosdep install --from-paths src/FAST-LIVO2 --ignore-src -r -y
 rosdep install --from-paths src/ros2_jetson_stats --ignore-src --rosdistro humble -y
 
-# Install SC-PGO dependencies (GTSAM for pose graph optimization)
-sudo apt install ros-humble-gtsam
+# Install Global-LVBA dependencies
+sudo apt install libceres-dev libglew-dev freeglut3-dev libsqlite3-dev
 ```
 
 ### Erase all and rebuild
@@ -98,8 +98,8 @@ Based on https://github.com/stereolabs/ros2_replay_data/blob/main/README.md
 ```
 source ./install/setup.bash
 ros2 launch handheld_bringup zed_svo_replay.launch.py \
-    svo_file_path:=/home/nvidia/Desktop/data/svo/zed_recording.svo2 \
-    bag_output_path:=/home/nvidia/Desktop/data/zed_ros_output
+    svo_file_path:=/home/ubuntu/Desktop/dataset/uosm_campus/BF-00/svo_20251228_085427/20251228_085427.svo2 \
+    pose_topic:=/zed_node/pose
 ```
 
 Get mcap-cli from https://github.com/foxglove/mcap/releases?q=mcap-cli and use mcap filter to match start and end timing of rosbag
@@ -110,13 +110,31 @@ mcap filter rosbag_20251227_075258_0.mcap \
   -o rosbag_trimmed.mcap
 ```
 
-## F. Offline Loop Closure
+## F. Offline Refinement with Global-LVBA
 
+[Global-LVBA](https://github.com/xuankuzcr/Global-LVBA) performs LiDAR-Visual Bundle Adjustment to refine FAST-LIVO2 output (poses + point cloud). It is ported to ROS2 in `src/Global-LVBA/`.
+
+### Build SiftGPU (first time only)
 ```
-colcon build --packages-select sc_pgo --symlink-install # eg handheld_bringup
+cd src/Global-LVBA/src/SiftGPU
+mkdir -p build && cd build && cmake .. && make
 ```
 
+### Build Global-LVBA
+```
+colcon build --packages-select global_lvba --symlink-install
+```
+
+### Workflow
+1. Run FAST-LIVO2 on your bag with `pcd_save_en: true` and `colmap_output_en: true` (already set in `mid360.yaml`).
+2. This produces `all_image/`, `all_pcd_body/`, image/lidar poses in TUM format under the FAST-LIVO2 output directory.
+3. Set `data_config.data_path` in the Global-LVBA config to point to this output.
+4. Run refinement:
 ```
 source ./install/setup.bash
-ros2 launch handheld_bringup fast_livo2.launch.py use_sc_pgo:=True
+ros2 launch handheld_bringup global_lvba_offline.launch.py
+```
+Or with a custom config:
+```
+ros2 launch handheld_bringup global_lvba_offline.launch.py config_file:=/path/to/your/config.yaml
 ```

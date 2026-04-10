@@ -1,0 +1,52 @@
+/**:
+  ros__parameters:
+    cam_model:
+      cam_width: 1280
+      cam_height: 1024
+      scale: 1.0
+      cam_fx: 1312.55
+      cam_fy: 1315.88
+      cam_cx: 654.029
+      cam_cy: 493.491
+      cam_d0: -0.0931107
+      cam_d1: 0.11652
+      cam_d2: -0.00162809
+      cam_d3: -0.000815772
+
+    extrin_calib:
+      extrinsic_T: [-0.011, -0.02329, 0.04412]
+      extrinsic_R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+      Rcl: [-0.006047, -0.999982, -0.000244,
+             0.367458, -0.001995, -0.930038,
+             0.930021, -0.005713,  0.367464]
+      Pcl: [0.009922, -0.127191, 0.017425]
+
+    data_config:
+      data_path: "dataset/"
+      colmap_db_path: ""
+      image_sample_step: 5
+      enable_lidar_ba: true
+      enable_visual_ba: true
+
+    window_ba:
+      enable: true
+      size: 20
+      anchor_leaf_size: 0.01
+      use_window_ba_rel: true
+
+    BALM_stage1:
+      enable: true
+      root_voxel_size: 1.0
+      eigen_ratio_array: [0.2, 0.2, 0.2, 0.2]
+
+    BALM_stage2:
+      root_voxel_size: 0.5
+      eigen_ratio_array: [0.08, 0.08, 0.08, 0.08]
+
+    track_fusion:
+      min_view_angle: 8.0
+      reproj_mean_thr: 3.0
+
+    colmap_output:
+      enable: false
+      filter_size_points3D: 0.01

@@ -31,14 +31,6 @@ def generate_launch_description():
     # hik_camera_config = os.path.join(bringup_package, 'config', 'hik_camera_fast_livo2.yaml')
     # mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options.yaml')
 
-    # SC-PGO package
-    try:
-        sc_pgo_package = get_package_share_directory('sc_pgo')
-        sc_pgo_config = os.path.join(sc_pgo_package, 'config', 'sc_pgo_params.yaml')
-        has_sc_pgo = True
-    except:
-        has_sc_pgo = False
-
     #Load parameters
     livox_config_cmd = os.path.join(config_file_dir, "mid360_offline.yaml")
     camera_config_cmd = os.path.join(config_file_dir, "camera_pinhole_mid360.yaml")
@@ -67,11 +59,6 @@ def generate_launch_description():
         'use_respawn',
         default_value='True',
         description='Whether to respawn if a node crashes. Applied when composition is disabled.')
-
-    use_sc_pgo_arg = DeclareLaunchArgument(
-        'use_sc_pgo',
-        default_value='True',
-        description='Whether to launch SC-PGO for loop closure and pose graph optimization')
 
     livox_params_file = LaunchConfiguration('livox_params_file')
     camera_params_file = LaunchConfiguration('camera_params_file')
@@ -142,19 +129,6 @@ def generate_launch_description():
         output="screen"
     )
 
-    # SC-PGO node for loop closure and pose graph optimization
-    sc_pgo_node = Node(
-        condition=IfCondition(LaunchConfiguration("use_sc_pgo")),
-        package="sc_pgo",
-        executable="laser_posegraph_optimization",
-        name="laser_pgo",
-        output="screen",
-        arguments=["--ros-args", "--log-level", "INFO"],
-        parameters=[
-            sc_pgo_config if has_sc_pgo else {},
-        ],
-    )
-
     # jetson_stats_node = Node(
     #     package='ros2_jetson_stats',
     #     executable='ros2_jtop',
@@ -197,12 +171,10 @@ def generate_launch_description():
         livox_config_arg,
         camera_config_arg,
         use_respawn_arg,
-        use_sc_pgo_arg,
         # bag_output_path_arg,
         # record_bag_arg,
 
         fast_livo_node,
-        sc_pgo_node,
         # jetson_stats_node,
         rviz_node,
         # sensor_warmup,

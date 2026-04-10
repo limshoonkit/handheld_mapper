@@ -1246,61 +1246,43 @@ void VoxelMapManager::MapJet(double v, double vmin, double vmax, uint8_t &r,
 }
 
 void VoxelMapManager::MapSliding() {
-  // if ((position_last_ - last_slide_position_).norm() <
-  //     config_setting_.sliding_thresh) {
-  //   std::cout << RED << "[DEBUG]: Last sliding length "
-  //             << (position_last_ - last_slide_position_).norm() << RESET
-  //             << "\n";
-  //   return;
-  // }
+  if ((position_last_ - last_slide_position_).norm() <
+      config_setting_.sliding_thresh) {
+    return;
+  }
 
-  // // get global id now
-  // last_slide_position_ = position_last_;
-  // double t_sliding_start = omp_get_wtime();
-  // float loc_xyz[3];
-  // for (int j = 0; j < 3; j++) {
-  //   loc_xyz[j] = position_last_[j] / config_setting_.max_voxel_size_;
-  //   if (loc_xyz[j] < 0) {
-  //     loc_xyz[j] -= 1.0;
-  //   }
-  // }
-  // // VOXEL_LOCATION position((int64_t)loc_xyz[0], (int64_t)loc_xyz[1],
-  // // (int64_t)loc_xyz[2]);//discrete global
-  // ClearMemOutOfMap((int64_t)loc_xyz[0] + config_setting_.half_map_size,
-  //                  (int64_t)loc_xyz[0] - config_setting_.half_map_size,
-  //                  (int64_t)loc_xyz[1] + config_setting_.half_map_size,
-  //                  (int64_t)loc_xyz[1] - config_setting_.half_map_size,
-  //                  (int64_t)loc_xyz[2] + config_setting_.half_map_size,
-  //                  (int64_t)loc_xyz[2] - config_setting_.half_map_size);
-  // double t_sliding_end = omp_get_wtime();
-  // std::cout << RED << "[DEBUG]: Map sliding using "
-  //           << t_sliding_end - t_sliding_start << " secs" << RESET << "\n";
-  // return;
+  last_slide_position_ = position_last_;
+  float loc_xyz[3];
+  for (int j = 0; j < 3; j++) {
+    loc_xyz[j] = position_last_[j] / config_setting_.max_voxel_size_;
+    if (loc_xyz[j] < 0) {
+      loc_xyz[j] -= 1.0;
+    }
+  }
+  ClearMemOutOfMap((int64_t)loc_xyz[0] + config_setting_.half_map_size,
+                   (int64_t)loc_xyz[0] - config_setting_.half_map_size,
+                   (int64_t)loc_xyz[1] + config_setting_.half_map_size,
+                   (int64_t)loc_xyz[1] - config_setting_.half_map_size,
+                   (int64_t)loc_xyz[2] + config_setting_.half_map_size,
+                   (int64_t)loc_xyz[2] - config_setting_.half_map_size);
 }
 
 void VoxelMapManager::ClearMemOutOfMap(const int &x_max, const int &x_min,
                                        const int &y_max, const int &y_min,
                                        const int &z_max, const int &z_min) {
-  // int delete_voxel_cout = 0;
-  // // double delete_time = 0;
-  // // double last_delete_time = 0;
-  // for (auto it = voxel_map_.begin(); it != voxel_map_.end();) {
-  //   const VOXEL_LOCATION &loc = it->first;
-  //   bool should_remove = loc.x > x_max || loc.x < x_min || loc.y > y_max ||
-  //                        loc.y < y_min || loc.z > z_max || loc.z < z_min;
-  //   if (should_remove) {
-  //     // last_delete_time = omp_get_wtime();
-  //     delete it->second;
-  //     it = voxel_map_.erase(it);
-  //     // delete_time += omp_get_wtime() - last_delete_time;
-  //     delete_voxel_cout++;
-  //   } else {
-  //     ++it;
-  //   }
-  // }
-  // std::cout << RED << "[DEBUG]: Delete " << delete_voxel_cout << " root
-  // voxels"
-  //           << RESET << "\n";
-  // // std::cout<<RED<<"[DEBUG]: Delete "<<delete_voxel_cout<<" voxels using
-  // // "<<delete_time<<" s"<<RESET<<"\n";
+  int delete_count = 0;
+  for (auto it = vm_data_.begin(); it != vm_data_.end();) {
+    const VOXEL_LOCATION &loc = it->first;
+    bool outside = loc.x > x_max || loc.x < x_min ||
+                   loc.y > y_max || loc.y < y_min ||
+                   loc.z > z_max || loc.z < z_min;
+    if (outside) {
+      vm_map_.erase(loc);
+      delete it->second;
+      it = vm_data_.erase(it);
+      delete_count++;
+    } else {
+      ++it;
+    }
+  }
 }

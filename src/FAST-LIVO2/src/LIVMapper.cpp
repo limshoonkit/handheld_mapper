@@ -12,6 +12,7 @@ which is included as part of this source code package.
 
 #include "LIVMapper.h"
 
+#include <malloc.h>
 #include <yaml-cpp/yaml.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -729,6 +730,8 @@ void LIVMapper::Run()
     ProcessImu();
 
     StateEstimationAndMapping();
+
+    malloc_trim(0);
   }
   SavePCD();
 }

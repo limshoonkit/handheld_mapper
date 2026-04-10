@@ -25,10 +25,16 @@ def generate_launch_description():
         description='Launch RViz2'
     )
 
-    tum_output_arg = DeclareLaunchArgument(
-        'tum_output',
-        default_value='./data/zed_trajectory_tum.txt',
-        description='Output TUM trajectory file (leave empty to disable)'
+    tum_output_dir_arg = DeclareLaunchArgument(
+        'tum_output_dir',
+        default_value='./data',
+        description='Output directory for TUM trajectory files'
+    )
+
+    pose_topic_arg = DeclareLaunchArgument(
+        'pose_topic',
+        default_value='/zed_node/pose',
+        description='PoseStamped topic to convert to TUM format'
     )
 
     # Configuration paths
@@ -36,7 +42,6 @@ def generate_launch_description():
     zed_wrapper_package = get_package_share_directory('zed_wrapper')
     zed_config_common = os.path.join(bringup_package, 'config', 'zed_config', 'common_stereo.yaml')
     zed_config_camera = os.path.join(bringup_package, 'config', 'zed_config', 'zed2i.yaml')
-    mcap_writer_options = os.path.join(bringup_package, 'config', 'mcap_writer_options_compression.yaml')
     rviz_config_path = os.path.join(bringup_package, 'config', 'rviz', 'zed_view_svo.rviz')
     xacro_path = os.path.join(zed_wrapper_package, 'urdf', 'zed_descr.urdf.xacro')
 
@@ -55,12 +60,12 @@ def generate_launch_description():
                 'general.camera_name': 'zed',
                 'general.camera_model': 'zed2i',
                 'svo.svo_path': svo_file_path,
-                'depth.depth_mode': 'NEURAL_PLUS',  # PERFORMANCE, NEURAL, NEURAL_PLUS, ULTRA
-                'pos_tracking.pos_tracking_enabled': True,
-                'pos_tracking.pos_tracking_mode': 'GEN_3', # GEN_1, GEN_2, GEN_3
-                'pos_tracking.publish_tf': True,
-                'pos_tracking.publish_map_tf': True,
-                'pos_tracking.publish_cam_path': True
+                # 'depth.depth_mode': 'NEURAL_PLUS',  # PERFORMANCE, NEURAL, NEURAL_PLUS, ULTRA
+                # 'pos_tracking.pos_tracking_enabled': True,
+                # 'pos_tracking.pos_tracking_mode': 'GEN_3', # GEN_1, GEN_2, GEN_3
+                # 'pos_tracking.publish_tf': True,
+                # 'pos_tracking.publish_map_tf': True,
+                # 'pos_tracking.publish_cam_path': True
             }
         ],
         extra_arguments=[{'use_intra_process_comms': True}]
@@ -104,17 +109,18 @@ def generate_launch_description():
     # TUM trajectory converter node (always runs with default output)
     tum_converter_node = Node(
         package='handheld_bringup',
-        executable='zed_pose_to_tum.py',
-        name='zed_pose_to_tum',
+        executable='pose_to_tum.py',
+        name='pose_to_tum',
         output='screen',
-        arguments=['--output', LaunchConfiguration('tum_output'), '--topic', '/zed_node/pose']
+        arguments=['--output_dir', LaunchConfiguration('tum_output_dir'), '--topics', LaunchConfiguration('pose_topic')]
     )
 
     return LaunchDescription([
         # Launch arguments
         svo_file_path_arg,
         use_rviz_arg,
-        tum_output_arg,
+        tum_output_dir_arg,
+        pose_topic_arg,
 
         # Nodes
         robot_state_publisher,

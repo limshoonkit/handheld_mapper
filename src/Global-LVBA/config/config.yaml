@@ -1,0 +1,50 @@
+cam_model: 
+  cam_width: 1280
+  cam_height: 1024
+  scale: 0.5
+  cam_fx: 1293.56944
+  cam_fy: 1293.3155
+  cam_cx: 626.91359
+  cam_cy: 522.799224
+  cam_d0: -0.076160
+  cam_d1: 0.123001
+  cam_d2: -0.00113
+  cam_d3: 0.000251
+
+extrin_calib:
+  extrinsic_T: [0.04165, 0.02326, -0.0284]
+  extrinsic_R: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  Rcl: [0.00610193,-0.999863,-0.0154172,
+      -0.00615449,0.0153796,-0.999863,
+        0.999962,0.00619598,-0.0060598] 
+  Pcl: [0.0194384, 0.104689,-0.0251952]
+
+data_config:
+  data_path: "dataset/CBD_Building_01/"
+  colmap_db_path: "Colmap/colmap_sub5.db"
+  image_sample_step: 5
+  enable_lidar_ba: false
+  enable_visual_ba: true
+
+window_ba:
+  enable: true
+  size: 20
+  anchor_leaf_size: 0.01
+  use_window_ba_rel: true
+
+BALM_stage1:
+  enable: true
+  root_voxel_size: 1.0
+  eigen_ratio_array: [0.2, 0.2, 0.2, 0.2]
+
+BALM_stage2:
+  root_voxel_size: 0.5
+  eigen_ratio_array: [0.08, 0.08, 0.08, 0.08]
+
+track_fusion:
+  min_view_angle: 8.0 # degree 
+  reproj_mean_thr: 3.0
+
+colmap_output:
+  enable: false 
+  filter_size_points3D: 0.01

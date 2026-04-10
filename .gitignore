@@ -7,3 +7,6 @@ data/*
 
 tmp/*
 *.pcd
+
+src/Global-LVBA/src/SiftGPU/build/
+src/FAST-LIVO2/Log/

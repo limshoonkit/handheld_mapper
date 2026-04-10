@@ -23,7 +23,8 @@ install(DIRECTORY
 # Install Python scripts
 install(PROGRAMS
   scripts/camera_info_publisher.py
-  scripts/zed_pose_to_tum.py
+  scripts/pose_to_tum.py
+  scripts/fl2_to_lvba.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
